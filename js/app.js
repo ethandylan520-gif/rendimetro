@@ -37,9 +37,66 @@
 
   const affNote = '<p class="aff-note">Enlaces de afiliado: si compras a través de ellos, esta web recibe una pequeña comisión sin coste extra para ti.</p>';
 
-  function bar(label, value, max, cls, right) {
-    const w = Math.max(4, Math.min(100, Math.round(value / max * 100)));
-    return `<div class="bar ${cls}"><div class="bar-fill" style="width:${w}%"></div><div class="bar-text"><span>${label}</span><span>${right}</span></div></div>`;
+  // ---------- Velocímetro ----------
+  const G_START = -125, G_SWEEP = 250;
+  const ESC_PTS = [[20, 4], [40, 4], [60, 6], [80, 4], [100, 5], [120, 6], [140, 7]];
+  const ESC_FPS = [[60, 4], [90, 3], [120, 4], [180, 3], [240, 4], [300, 5], [360, 6], [480, 4], [600, 5], [900, 6], [1200, 6]];
+  const FPS_ZONAS = [[0, 30, 'bad'], [30, 60, 'warn'], [60, 144, 'ok'], [144, Infinity, 'info']];
+
+  const escala = (valor, opciones) => opciones.find(([m]) => m >= valor) || opciones[opciones.length - 1];
+  const fix = n => n.toFixed(2);
+
+  function polar(r, deg) {
+    const a = deg * Math.PI / 180;
+    return [100 + r * Math.sin(a), 100 - r * Math.cos(a)];
+  }
+
+  function arco(r, from, to) {
+    const [x1, y1] = polar(r, from), [x2, y2] = polar(r, to);
+    return `M ${fix(x1)} ${fix(y1)} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${fix(x2)} ${fix(y2)}`;
+  }
+
+  function gauge({ value, scale, label, sub = '', unit, color, read, zonas }) {
+    const [max, pasos] = scale;
+    const t = Math.max(0, Math.min(1, value / max));
+    const ang = G_START + G_SWEEP * t;
+    const toAng = v => G_START + G_SWEEP * Math.min(1, v / max);
+
+    let marcas = '';
+    const total = pasos * 4;
+    for (let i = 0; i <= total; i++) {
+      const deg = G_START + G_SWEEP * i / total;
+      const mayor = i % 4 === 0;
+      const [x1, y1] = polar(mayor ? 60 : 64, deg), [x2, y2] = polar(70, deg);
+      marcas += `<line x1="${fix(x1)}" y1="${fix(y1)}" x2="${fix(x2)}" y2="${fix(y2)}" class="${mayor ? 'tk-major' : 'tk'}"/>`;
+      if (mayor) {
+        const [lx, ly] = polar(49, deg);
+        marcas += `<text x="${fix(lx)}" y="${fix(ly)}" class="tk-label">${Math.round(max * i / total)}</text>`;
+      }
+    }
+
+    const bandas = (zonas || [])
+      .filter(([desde]) => desde < max)
+      .map(([desde, hasta, cls]) => `<path d="${arco(89, toAng(desde), toAng(Math.min(hasta, max)))}" class="g-zone z-${cls}"/>`)
+      .join('');
+
+    const lleno = t > 0.005
+      ? `<path d="${arco(80, G_START, G_START + G_SWEEP)}" pathLength="100" class="g-value c-${color}" style="stroke-dasharray:${fix(t * 100)} 100"/>`
+      : '';
+
+    return `<figure class="gauge">
+      <svg viewBox="0 0 200 162" role="img" aria-label="${label}: ${read ?? Math.round(value)} ${unit}">
+        ${bandas}
+        <path d="${arco(80, G_START, G_START + G_SWEEP)}" class="g-track"/>
+        ${lleno}
+        ${marcas}
+        <polygon points="96.5,100 103.5,100 100,26" class="needle n-${color}" style="transform:rotate(${fix(ang)}deg)"/>
+        <circle cx="100" cy="100" r="7" class="hub"/>
+        <text x="100" y="141" class="g-read">${read ?? Math.round(value)}</text>
+        <text x="100" y="155" class="g-unit">${unit}</text>
+      </svg>
+      <figcaption><span class="g-label">${label}</span>${sub ? `<span class="g-sub">${sub}</span>` : ''}</figcaption>
+    </figure>`;
   }
 
   function fillHardware(select, items, key) {
@@ -83,13 +140,13 @@
         ? `<strong>${a.name}</strong> y <strong>${b.name}</strong> rinden prácticamente igual.`
         : `<strong>${w.name}</strong> rinde un <strong class="hl-gpu">${d}% más</strong> que ${l.name}.`;
     }
-    const max = Math.max(a.idx, b.idx);
+    const scale = escala(Math.max(a.idx, b.idx) * 1.08, ESC_PTS);
     const eff = g => Math.round(g.idx / g.tdp * 1000) / 10;
     $('gpuResult').innerHTML = `
       <p class="headline">${head}</p>
-      <div class="bars">
-        ${bar(a.name, a.idx, max, 'gpu', `${a.idx} pts`)}
-        ${bar(b.name, b.idx, max, 'gpu-b', `${b.idx} pts`)}
+      <div class="gauges">
+        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu' })}
+        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b' })}
       </div>
       <div class="table-wrap"><table class="specs">
         <thead><tr><th></th><th>${a.name}</th><th>${b.name}</th></tr></thead>
@@ -123,22 +180,19 @@
         ? 'En tareas multinúcleo (edición de vídeo, streaming, renderizado) van a la par.'
         : `En tareas multinúcleo (edición de vídeo, streaming, renderizado) gana el ${mw.name} por un ${dm}%.`;
     }
-    const maxG = Math.max(a.game, b.game), maxM = Math.max(a.multi, b.multi);
+    const scaleG = escala(Math.max(a.game, b.game) * 1.08, ESC_PTS);
+    const scaleM = escala(Math.max(a.multi, b.multi) * 1.08, ESC_PTS);
     const plataforma = a.socket === b.socket
       ? `<p class="note">Los dos usan la plataforma ${a.socket}: puedes cambiar uno por otro sin cambiar de placa base (a veces hace falta actualizar la BIOS).</p>`
       : '';
     $('cpuResult').innerHTML = `
       <p class="headline">${head}</p>
       ${sub ? `<p class="subline">${sub}</p>` : ''}
-      <h3 class="bars-title">Juegos</h3>
-      <div class="bars">
-        ${bar(a.name, a.game, maxG, 'cpu', `${a.game} pts`)}
-        ${bar(b.name, b.game, maxG, 'cpu-b', `${b.game} pts`)}
-      </div>
-      <h3 class="bars-title">Multinúcleo</h3>
-      <div class="bars">
-        ${bar(a.name, a.multi, maxM, 'cpu', `${a.multi} pts`)}
-        ${bar(b.name, b.multi, maxM, 'cpu-b', `${b.multi} pts`)}
+      <div class="gauges four">
+        ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu' })}
+        ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b' })}
+        ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu' })}
+        ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu-b' })}
       </div>
       <div class="table-wrap"><table class="specs cpu-specs">
         <thead><tr><th></th><th>${a.name}</th><th>${b.name}</th></tr></thead>
@@ -223,10 +277,10 @@
 
     $('bnResult').innerHTML = `
       <div class="verdict v-${tone}"><span class="verdict-title">${title}</span><p>${text}</p></div>
-      <div class="bars">
-        ${bar(`Gráfica · ${g.name}`, g.idx, GPU_TOP, 'gpu', `${Math.round(g.idx / GPU_TOP * 100)}/100`)}
-        ${bar(`Procesador · ${c.name}`, c.game, CPU_TOP, 'cpu', `${Math.round(c.game / CPU_TOP * 100)}/100`)}
-        ${bar('Aprovechamiento de la gráfica', feed * 100, 100, `use-${tone}`, `${Math.round(feed * 100)}%`)}
+      <div class="gauges three">
+        ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu' })}
+        ${gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu' })}
+        ${gauge({ value: feed * 100, scale: [100, 5], label: 'Aprovechamiento', sub: 'de la gráfica', unit: '%', color: tone })}
       </div>
       <h3 class="bars-title">Según la resolución</h3>
       <ul class="res-list">${porRes}</ul>
@@ -261,16 +315,16 @@
     const g = GPU[$('fpsGpu').value], c = CPU[$('fpsCpu').value], j = JUEGO[$('fpsGame').value], r = $('fpsRes').value;
     const res = RES[r].label;
     const rows = PRESETS.map(p => ({ p, ...estimar(g, c, j, r, p) }));
-    const max = Math.max(...rows.map(x => x.fps), 60) * 1.08;
+    const scale = escala(Math.max(...rows.map(x => x.fps), 60) * 1.05, ESC_FPS);
 
     const table = rows.map(x => {
       const t = fpsTier(x.fps);
       const lim = x.capped ? 'Límite del juego' : x.limit === 'gpu' ? 'Limita la gráfica' : 'Limita el procesador';
-      return `<div class="fps-row">
-        <span class="fps-preset">${x.p.label}</span>
-        ${bar(t.label, x.fps, max, `fps-${t.cls}`, `<span class="lim">${lim}</span>`)}
-        <span class="fps-num">${Math.round(x.fps)}<small> FPS</small></span>
-      </div>`;
+      return gauge({
+        value: x.fps, scale, label: `Calidad ${x.p.label}`,
+        sub: `<b class="t-${t.cls}">${t.label}</b> · ${lim}`,
+        unit: 'FPS', color: t.cls, zonas: FPS_ZONAS
+      });
     }).join('');
 
     const cortos = rows.filter(x => x.vramShort).map(x => x.p.label);
@@ -317,7 +371,7 @@
 
     $('fpsResult').innerHTML = `
       <p class="headline"><strong>${j.name}</strong> en ${res} con ${g.name} y ${c.name}</p>
-      <div class="fps-table">${table}</div>
+      <div class="gauges four">${table}</div>
       ${vram}${cap}${rec}
       <p class="aff-note">Estimación orientativa sin DLSS/FSR ni generación de fotogramas: con reescalado puedes ganar bastante más.</p>
       ${rec.includes('class="rec') ? affNote : ''}`;
