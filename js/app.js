@@ -18,10 +18,25 @@
     { id: 'alta', label: 'Alta', w: 0.22, cpu: 1.03, vram: 0.86 },
     { id: 'ultra', label: 'Ultra', w: 0, cpu: 1.0, vram: 1.0 }
   ];
-  const TABS = ['gpu', 'cpu', 'cuello', 'fps'];
+  const TABS = ['gpu', 'cpu', 'cuello', 'fps', 'pc'];
 
   const $ = id => document.getElementById(id);
   const diff = (a, b) => Math.round((a / b - 1) * 100);
+  const escapeHtml = s => s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Si el juego es un perfil genérico y el usuario escribió un nombre, usamos ese nombre en los textos.
+  function nombreJuego(selectId, j) {
+    const custom = $(selectId).dataset.custom;
+    return j.generic && custom ? `«${escapeHtml(custom)}»` : j.name;
+  }
+
+  function notaGenerico(selectId, j) {
+    if (!j.generic) return '';
+    const custom = $(selectId).dataset.custom;
+    const quien = custom ? `«${escapeHtml(custom)}»` : 'ese juego';
+    return `<p class="note">No tenemos datos concretos de ${quien}: lo estimamos como ${j.perfil}. Tómalo como una referencia aproximada.</p>`;
+  }
 
   function amazonUrl(query) {
     const url = new URL(`https://${cfg.amazonDominio || 'www.amazon.es'}/s`);
@@ -275,7 +290,21 @@
       return `<li><span>${RES[k].label}</span><strong class="t-${cls}">${x > 5 ? `Limita un ${Math.round(x)}%` : 'Sin cuello de botella'}</strong></li>`;
     }).join('');
 
+    const compat = [{ ok: true, txt: `Encajan: la ${g.name} va en cualquier placa con ranura PCIe x16, así que puedes montarla con el ${c.name}.` }];
+    if (g.x8 && c.pcie3) {
+      compat.push({ ok: false, txt: `La ${g.name} usa solo 8 líneas PCIe y el ${c.name} va con PCIe 3.0: perderá algo de rendimiento, sobre todo cuando se quede sin VRAM.` });
+    }
+    if (g.brand === 'Intel' && (c.socket === 'LGA1151' || c.id === 'r2600')) {
+      compat.push({ ok: false, txt: `Las Intel Arc necesitan Resizable BAR para rendir bien y con el ${c.name} lo más probable es que tu placa no lo tenga. Sin él rinden bastante peor.` });
+    } else if (g.brand === 'Intel' && c.game < 65) {
+      compat.push({ ok: false, txt: `Las Intel Arc pierden algo de rendimiento con procesadores modestos como el ${c.name} por la carga extra de su driver.` });
+    }
+    const compatHtml = `<ul class="compat">${compat.map(x => `<li class="${x.ok ? 'cp-si' : 'cp-aviso'}">${x.txt}</li>`).join('')}</ul>`;
+
     $('bnResult').innerHTML = `
+      <h3 class="bars-title">Compatibilidad</h3>
+      ${compatHtml}
+      <h3 class="bars-title">Equilibrio (cuello de botella)</h3>
       <div class="verdict v-${tone}"><span class="verdict-title">${title}</span><p>${text}</p></div>
       <div class="gauges three">
         ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu' })}
@@ -313,6 +342,7 @@
 
   function renderFps() {
     const g = GPU[$('fpsGpu').value], c = CPU[$('fpsCpu').value], j = JUEGO[$('fpsGame').value], r = $('fpsRes').value;
+    const nombre = nombreJuego('fpsGame', j);
     const res = RES[r].label;
     const rows = PRESETS.map(p => ({ p, ...estimar(g, c, j, r, p) }));
     const scale = escala(Math.max(...rows.map(x => x.fps), 60) * 1.05, ESC_FPS);
@@ -330,15 +360,15 @@
     const cortos = rows.filter(x => x.vramShort).map(x => x.p.label);
     const lista = cortos.length > 1 ? `${cortos.slice(0, -1).join(', ')} y ${cortos[cortos.length - 1]}` : cortos[0];
     const vram = cortos.length
-      ? `<p class="note warn-note">Con ${g.vram} GB de VRAM te quedas corto en calidad ${lista} (${j.name} pide unos ${Math.ceil(rows[3].vramNeed)} GB en Ultra a ${res}). Baja la calidad de texturas para evitar tirones.</p>`
+      ? `<p class="note warn-note">Con ${g.vram} GB de VRAM te quedas corto en calidad ${lista} (${nombre} pide unos ${Math.ceil(rows[3].vramNeed)} GB en Ultra a ${res}). Baja la calidad de texturas para evitar tirones.</p>`
       : '';
     const alta = rows[2], ultra = rows[3];
-    const cap = j.cap && !ultra.capped ? `<p class="note">${j.name} tiene un límite de ${j.cap} FPS.</p>` : '';
+    const cap = j.cap && !ultra.capped ? `<p class="note">${nombre} tiene un límite de ${j.cap} FPS.</p>` : '';
     let rec;
     if (ultra.capped && !ultra.vramShort) {
-      rec = `<p class="note ok-note">Con este equipo mueves ${j.name} en <strong>Ultra</strong> al máximo que permite el juego (${j.cap} FPS) en ${res}.</p>`;
+      rec = `<p class="note ok-note">Con este equipo mueves ${nombre} en <strong>Ultra</strong> al máximo que permite el juego (${j.cap} FPS) en ${res}.</p>`;
     } else if (ultra.fps >= 60 && !ultra.vramShort) {
-      rec = `<p class="note ok-note">Con este equipo mueves ${j.name} en <strong>Ultra</strong> a más de 60 FPS en ${res}.</p>`;
+      rec = `<p class="note ok-note">Con este equipo mueves ${nombre} en <strong>Ultra</strong> a más de 60 FPS en ${res}.</p>`;
     } else if (alta.fps >= 60 && !alta.vramShort) {
       rec = `<p class="note ok-note">Puedes jugar en <strong>Alta</strong> a más de 60 FPS en ${res}. Para Ultra fluido te haría falta algo más de potencia.</p>`;
     } else {
@@ -370,11 +400,298 @@
     }
 
     $('fpsResult').innerHTML = `
-      <p class="headline"><strong>${j.name}</strong> en ${res} con ${g.name} y ${c.name}</p>
+      <p class="headline"><strong>${nombre}</strong> en ${res} con ${g.name} y ${c.name}</p>
       <div class="gauges four">${table}</div>
-      ${vram}${cap}${rec}
+      ${notaGenerico('fpsGame', j)}${vram}${cap}${rec}
       <p class="aff-note">Estimación orientativa sin DLSS/FSR ni generación de fotogramas: con reescalado puedes ganar bastante más.</p>
       ${rec.includes('class="rec') ? affNote : ''}`;
+  }
+
+  // ---------- Tu PC ideal ----------
+  const COMPETITIVOS = ['cs2', 'valorant', 'lol', 'fortnite', 'apex', 'rivals', 'bo6', 'bf6'];
+  const PRESUPUESTO_MIN = 300, RANGO_MAX = 4000;
+  const eur = n => `${Math.round(n).toLocaleString('es-ES')} €`;
+
+  function fuentePara(g, c) {
+    const need = (g.tdp + c.w + 100) * 1.3;
+    return PIEZAS.fuentes.find(f => f.w >= need) || PIEZAS.fuentes[PIEZAS.fuentes.length - 1];
+  }
+
+  function montar(g, c, grande) {
+    const plat = PIEZAS.plataformas[c.socket];
+    const gb = grande ? 32 : 16;
+    const ram = PIEZAS.ram[plat.ram][gb];
+    const fuente = fuentePara(g, c);
+    const caja = grande ? PIEZAS.cajas.buena : PIEZAS.cajas.basica;
+    const disip = PIEZAS.disipadores[c.disipador];
+    const partes = [
+      { tipo: 'Gráfica', nombre: g.name, precio: g.precio, q: `tarjeta gráfica ${g.name}` },
+      { tipo: 'Procesador', nombre: c.name, precio: c.precio, q: `procesador ${c.brand} ${c.name}` },
+      { tipo: 'Placa base', nombre: `${plat.chipset} (${c.socket})`, precio: plat.precio, q: plat.q },
+      { tipo: 'Memoria RAM', nombre: `${gb} GB ${plat.ram}`, precio: ram.precio, q: ram.q },
+      { tipo: 'Almacenamiento', nombre: PIEZAS.ssd.nombre, precio: PIEZAS.ssd.precio, q: PIEZAS.ssd.q },
+      { tipo: 'Fuente', nombre: `${fuente.w} W 80 Plus Gold`, precio: fuente.precio, q: `fuente alimentación ${fuente.w}W 80 Plus Gold` },
+      { tipo: 'Caja', nombre: caja.nombre, precio: caja.precio, q: caja.q },
+      { tipo: 'Disipador', nombre: disip.nombre, precio: disip.precio, q: disip.q }
+    ];
+    return { g, c, partes, total: partes.reduce((s, p) => s + p.precio, 0) };
+  }
+
+  function mejorHasta(lista, tope) {
+    const dentro = lista.filter(b => b.total <= tope);
+    if (!dentro.length) return null;
+    const top = Math.max(...dentro.map(b => b.est.fps));
+    return dentro.filter(b => b.est.fps >= top * 0.98).sort((a, b) => a.total - b.total)[0];
+  }
+
+  const miniLink = q => `<a class="amz-mini" href="${amazonUrl(q)}" target="_blank" rel="sponsored noopener">Ver en Amazon</a>`;
+
+  function cambios(de, a) {
+    const out = [];
+    if (de.g !== a.g) out.push({ html: `Gráfica: ${de.g.name} → <strong>${a.g.name}</strong>`, q: `tarjeta gráfica ${a.g.name}` });
+    if (de.c !== a.c) {
+      const placa = de.c.socket !== a.c.socket ? ' (con otra placa base)' : '';
+      out.push({ html: `Procesador: ${de.c.name} → <strong>${a.c.name}</strong>${placa}`, q: `procesador ${a.c.brand} ${a.c.name}` });
+    }
+    return out;
+  }
+
+  function leerPresupuesto() {
+    const v = Math.round(Number($('pcBudget').value));
+    return Number.isFinite(v) && v >= PRESUPUESTO_MIN ? v : null;
+  }
+
+  function renderPc() {
+    const j = JUEGO[$('pcGame').value], r = $('pcRes').value;
+    const nombre = nombreJuego('pcGame', j);
+    const p = PRESETS.find(x => x.id === $('pcCal').value);
+    const presupuesto = leerPresupuesto();
+    if (presupuesto === null) {
+      $('pcResult').innerHTML = `<p class="note warn-note">Escribe un presupuesto de al menos ${eur(PRESUPUESTO_MIN)}.</p>`;
+      return;
+    }
+    const res = RES[r].label;
+    const grande = presupuesto >= 900;
+    const lista = [];
+    for (const g of GPUS) {
+      if (!g.buy) continue;
+      // El modelo de FPS medio no ve los mínimos ni otros juegos: evitamos procesadores muy por debajo de la gráfica.
+      const cpuMin = Math.min(95, g.idx * 0.65);
+      for (const c of CPUS) {
+        if (!c.buy || c.game < cpuMin) continue;
+        const b = montar(g, c, grande);
+        b.est = estimar(g, c, j, r, p);
+        lista.push(b);
+      }
+    }
+
+    let elegido = mejorHasta(lista, presupuesto);
+    let aviso = '';
+    if (!elegido) {
+      elegido = [...lista].sort((a, b) => a.total - b.total)[0];
+      aviso = `<p class="note warn-note">Con ${eur(presupuesto)} no llega para un PC completo con piezas nuevas. Lo más económico que tiene sentido ronda los <strong>${eur(elegido.total)}</strong>: te lo enseñamos como referencia.</p>`;
+    }
+
+    const e = elegido.est;
+    const t = fpsTier(e.fps);
+    const lim = e.capped ? 'Límite del juego' : e.limit === 'gpu' ? 'Limita la gráfica' : 'Limita el procesador';
+    const scale = escala(Math.max(e.fps, 60) * 1.05, ESC_FPS);
+
+    const filas = elegido.partes.map(x => `<tr>
+        <th scope="row">${x.tipo}</th>
+        <td>${x.nombre}</td>
+        <td class="precio">${x.precio ? `~${eur(x.precio)}` : '—'}</td>
+        <td class="link">${x.q ? miniLink(x.q) : ''}</td>
+      </tr>`).join('');
+
+    const objetivo = Math.min(COMPETITIVOS.includes(j.id) ? 144 : 60, j.cap || Infinity);
+    const barato = lista.filter(b => b.est.fps >= objetivo).sort((a, b) => a.total - b.total)[0];
+    let notas = notaGenerico('pcGame', j) + aviso;
+    if (e.vramShort) notas += `<p class="note warn-note">En calidad ${p.label} a ${res} este juego pide más VRAM de la que tienen las gráficas de este presupuesto: baja la calidad de texturas para evitar tirones.</p>`;
+    const siguiente = lista.filter(b => b.est.fps >= e.fps * 1.05).sort((a, b) => a.total - b.total)[0];
+    const sobra = !aviso && elegido.total < presupuesto - 150;
+    if (!aviso) {
+      if (e.capped) {
+        notas += `<p class="note ok-note">${nombre} está limitado a ${j.cap} FPS y con este equipo ya lo mueves al máximo.</p>`;
+      } else if (e.fps < objetivo && barato) {
+        notas += `<p class="note">Con este presupuesto no llegas a ${objetivo} FPS. Para conseguirlo harían falta unos <strong>${eur(barato.total)}</strong> (${barato.g.name} + ${barato.c.name}).</p>`;
+      } else if (e.fps < objetivo) {
+        notas += `<p class="note">Ningún PC con piezas actuales llega a ${objetivo} FPS en esta calidad y resolución. Prueba a bajar la calidad.</p>`;
+      } else if (barato && barato.total < elegido.total * 0.8) {
+        notas += `<p class="note ok-note">Para jugar a ${objetivo} FPS te bastaría con unos <strong>${eur(barato.total)}</strong> (${barato.g.name} + ${barato.c.name}). Lo que gastes de más se nota en FPS extra.</p>`;
+      }
+      if (sobra && !e.capped) {
+        notas += siguiente
+          ? `<p class="note">No hace falta gastar todo tu presupuesto: con ${eur(elegido.total)} ya tienes lo máximo que se consigue por debajo de ${eur(presupuesto)} en este juego.</p>`
+          : `<p class="note">No hace falta gastar todo tu presupuesto: por encima de ${eur(elegido.total)} apenas ganarías FPS en este juego, gastes lo que gastes.</p>`;
+      }
+    }
+
+    const mejoras = [];
+    if (!aviso) {
+      for (const extra of [100, 200, 350]) {
+        const b = mejorHasta(lista, presupuesto + extra);
+        if (!b || b.total <= elegido.total) continue;
+        if (b.est.fps < e.fps * 1.05) continue;
+        if (mejoras.some(m => m.g === b.g && m.c === b.c)) continue;
+        mejoras.push(b);
+      }
+    }
+    const tarjetas = mejoras.map(b => {
+      const cs = cambios(elegido, b);
+      return `<div class="upg">
+          <div class="upg-top">
+            <span class="upg-extra">+${eur(b.total - elegido.total)}</span>
+            <span class="upg-fps">${Math.round(b.est.fps)} FPS <em>+${diff(b.est.fps, e.fps)}%</em></span>
+          </div>
+          <ul>${cs.map(x => `<li>${x.html}</li>`).join('')}</ul>
+          <p class="upg-total">Total: ~${eur(b.total)}</p>
+          <div class="upg-links">${cs.map(x => miniLink(x.q)).join('')}</div>
+        </div>`;
+    }).join('');
+    let bloqueMejoras = '';
+    if (!aviso && !e.capped) {
+      let contenido;
+      if (tarjetas) {
+        contenido = `<div class="upgrades">${tarjetas}</div>`;
+      } else if (siguiente) {
+        const cs = cambios(elegido, siguiente);
+        contenido = `<div class="upgrades"><div class="upg">
+            <div class="upg-top">
+              <span class="upg-extra">+${eur(siguiente.total - elegido.total)}</span>
+              <span class="upg-fps">${Math.round(siguiente.est.fps)} FPS <em>+${diff(siguiente.est.fps, e.fps)}%</em></span>
+            </div>
+            <p class="upg-total">Por poco más no hay mejora que merezca la pena. El siguiente salto de rendimiento está en unos ${eur(siguiente.total)}:</p>
+            <ul>${cs.map(x => `<li>${x.html}</li>`).join('')}</ul>
+            <div class="upg-links">${cs.map(x => miniLink(x.q)).join('')}</div>
+          </div></div>`;
+      } else {
+        contenido = sobra ? '' : '<p class="note">Gastando más apenas ganarías FPS en este juego: ya tienes lo que más sentido tiene.</p>';
+      }
+      if (contenido) bloqueMejoras = `<h3 class="bars-title">${tarjetas ? 'Por un poco más' : 'Si quieres más'}</h3>${contenido}`;
+    }
+
+    $('pcResult').innerHTML = `
+      <p class="headline">Tu PC para <strong>${nombre}</strong> en ${res} · calidad ${p.label} · hasta ${eur(presupuesto)}</p>
+      <div class="build">
+        <div class="build-gauge">
+          ${gauge({ value: e.fps, scale, label: `${Math.round(e.fps)} FPS estimados`, sub: `<b class="t-${t.cls}">${t.label}</b> · ${lim}`, unit: 'FPS', color: t.cls, zonas: FPS_ZONAS })}
+        </div>
+        <div class="table-wrap build-parts"><table class="parts">
+          <tbody>${filas}</tbody>
+          <tfoot><tr><th scope="row">Total</th><td></td><td class="precio">~${eur(elegido.total)}</td><td></td></tr></tfoot>
+        </table></div>
+      </div>
+      ${notas}
+      ${bloqueMejoras}
+      <p class="aff-note">Precios orientativos del mercado español (septiembre 2026): el precio real puede variar, consúltalo en Amazon. No incluye monitor, periféricos ni sistema operativo. FPS estimados sin DLSS/FSR.</p>
+      ${affNote}`;
+  }
+
+  // ---------- Buscador de juegos ----------
+  const REALES = JUEGOS.filter(j => !j.generic).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  const GENERICOS = JUEGOS.filter(j => j.generic);
+  const etiqueta = j => (j.year ? `${j.name} <small>${j.year}</small>` : j.name);
+
+  function buscarJuegos(texto) {
+    const q = norm(texto);
+    if (!q) return REALES;
+    return REALES
+      .filter(j => norm(j.name).includes(q) || (j.alias || []).some(a => a.startsWith(q) || q.startsWith(`${a} `)))
+      .sort((a, b) => Number(norm(b.name).startsWith(q)) - Number(norm(a.name).startsWith(q)));
+  }
+
+  function initCombo(prefix) {
+    const input = $(`${prefix}GameInput`), list = $(`${prefix}GameList`), select = $(`${prefix}Game`);
+    let items = [], active = -1, escrito = '';
+
+    const mostrarActual = () => {
+      const j = JUEGO[select.value];
+      input.value = j.generic && select.dataset.custom ? select.dataset.custom : j.name;
+    };
+    const cerrar = () => {
+      list.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      active = -1;
+    };
+    const marcar = () => {
+      list.querySelectorAll('[role="option"]').forEach((li, i) => li.setAttribute('aria-selected', String(i === active)));
+      const li = list.querySelector('[role="option"][aria-selected="true"]');
+      if (li) {
+        input.setAttribute('aria-activedescendant', li.id);
+        li.scrollIntoView({ block: 'nearest' });
+      } else {
+        input.removeAttribute('aria-activedescendant');
+      }
+    };
+
+    function pintar(texto) {
+      escrito = texto.trim();
+      const buscando = Boolean(norm(texto));
+      const hits = buscarJuegos(texto);
+      let html = '';
+      if (hits.length) {
+        items = buscando ? hits : [...hits, ...GENERICOS];
+      } else {
+        items = GENERICOS;
+        html = `<li class="combo-empty" role="presentation">No tenemos «${escapeHtml(escrito)}» todavía. ¿Cómo de exigente es?</li>`;
+      }
+      html += items.map(j => {
+        const sep = !buscando && j === GENERICOS[0] ? '<li class="combo-sep" role="presentation">¿No está tu juego?</li>' : '';
+        return `${sep}<li role="option" id="${prefix}-opt-${j.id}" data-id="${j.id}" class="combo-opt${j.generic ? ' gen' : ''}" aria-selected="false">${etiqueta(j)}</li>`;
+      }).join('');
+      list.innerHTML = html;
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      active = hits.length && buscando ? 0 : -1;
+      marcar();
+    }
+
+    function elegir(j) {
+      if (j.generic && escrito && !buscarJuegos(escrito).length) select.dataset.custom = escrito.slice(0, 60);
+      else delete select.dataset.custom;
+      select.value = j.id;
+      cerrar();
+      select.dispatchEvent(new Event('change'));
+    }
+
+    input.addEventListener('focus', () => { input.select(); pintar(''); });
+    input.addEventListener('click', () => { if (list.hidden) pintar(''); });
+    input.addEventListener('input', () => pintar(input.value));
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (list.hidden) pintar(input.value);
+        if (!items.length) return;
+        active = e.key === 'ArrowDown' ? (active + 1) % items.length : (active - 1 + items.length) % items.length;
+        marcar();
+      } else if (e.key === 'Enter') {
+        if (list.hidden) return;
+        e.preventDefault();
+        if (active >= 0) elegir(items[active]);
+      } else if (e.key === 'Escape') {
+        cerrar();
+        mostrarActual();
+      }
+    });
+    const pick = e => {
+      const li = e.target.closest('[role="option"]');
+      if (!li || list.hidden) return;
+      e.preventDefault();
+      elegir(JUEGO[li.dataset.id]);
+    };
+    list.addEventListener('mousedown', pick);
+    list.addEventListener('click', pick);
+    input.addEventListener('blur', () => {
+      if (list.hidden) return;
+      const q = norm(input.value);
+      const exacto = q && REALES.find(j => norm(j.name) === q || (j.alias || []).includes(q));
+      if (exacto) elegir(exacto);
+      else { cerrar(); mostrarActual(); }
+    });
+    select.addEventListener('change', mostrarActual);
+    mostrarActual();
   }
 
   // ---------- Pestañas ----------
@@ -411,23 +728,39 @@
   // ---------- Arranque ----------
   ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'idx'));
   ['cpuA', 'cpuB', 'bnCpu', 'fpsCpu'].forEach(id => fillHardware($(id), CPUS, 'game'));
-  ['bnRes', 'fpsRes'].forEach(id => fillRes($(id)));
-  $('fpsGame').innerHTML = [...JUEGOS].sort((a, b) => a.name.localeCompare(b.name, 'es'))
-    .map(j => `<option value="${j.id}">${j.name} (${j.year})</option>`).join('');
+  ['bnRes', 'fpsRes', 'pcRes'].forEach(id => fillRes($(id)));
+  const juegosOpts = JUEGOS.map(j => `<option value="${j.id}">${j.name}</option>`).join('');
+  $('fpsGame').innerHTML = juegosOpts;
+  $('pcGame').innerHTML = juegosOpts;
+  $('pcCal').innerHTML = PRESETS.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
 
   const defaults = {
     gpuA: 'rtx5070', gpuB: 'rx9070',
     cpuA: 'r7600', cpuB: 'i514400f',
     bnGpu: 'rtx5070', bnCpu: 'r5600', bnRes: '1440',
-    fpsGpu: 'rtx4060', fpsCpu: 'r5600', fpsGame: 'cyberpunk', fpsRes: '1080'
+    fpsGpu: 'rtx4060', fpsCpu: 'r5600', fpsGame: 'cyberpunk', fpsRes: '1080',
+    pcGame: 'cyberpunk', pcRes: '1440', pcCal: 'alta', pcBudget: '1000', pcRange: '1000'
   };
   Object.entries(defaults).forEach(([id, v]) => { $(id).value = v; });
+  initCombo('fps');
+  initCombo('pc');
+
+  $('pcRange').addEventListener('input', () => {
+    $('pcBudget').value = $('pcRange').value;
+    renderPc();
+  });
+  $('pcBudget').addEventListener('input', () => {
+    const v = leerPresupuesto();
+    if (v !== null) $('pcRange').value = String(Math.min(v, RANGO_MAX));
+    renderPc();
+  });
 
   const renders = {
     gpu: [['gpuA', 'gpuB'], renderGpu],
     cpu: [['cpuA', 'cpuB'], renderCpu],
     cuello: [['bnGpu', 'bnCpu', 'bnRes'], renderCuello],
-    fps: [['fpsGpu', 'fpsCpu', 'fpsGame', 'fpsRes'], renderFps]
+    fps: [['fpsGpu', 'fpsCpu', 'fpsGame', 'fpsRes'], renderFps],
+    pc: [['pcGame', 'pcRes', 'pcCal'], renderPc]
   };
   Object.values(renders).forEach(([ids, fn]) => {
     ids.forEach(id => $(id).addEventListener('change', fn));

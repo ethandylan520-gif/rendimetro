@@ -6,7 +6,7 @@
 <title>Rendímetro — Compara gráficas, procesadores y FPS en juegos</title>
 <meta name="description" content="Compara tarjetas gráficas y procesadores, detecta cuellos de botella y calcula cuántos FPS sacarás en tus juegos en calidad baja, media, alta y ultra.">
 <meta property="og:title" content="Rendímetro — Compara gráficas, procesadores y FPS">
-<meta property="og:description" content="Gráfica contra gráfica, procesador contra procesador, cuello de botella y FPS por juego. Gratis y sin registro.">
+<meta property="og:description" content="Gráfica contra gráfica, procesador contra procesador, compatibilidad gráfica + procesador, FPS por juego y tu PC ideal. Gratis y sin registro.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0b0f15">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0f15'/%3E%3Crect x='6' y='18' width='5' height='8' rx='1.5' fill='%23a3e635'/%3E%3Crect x='13.5' y='12' width='5' height='14' rx='1.5' fill='%23a3e635'/%3E%3Crect x='21' y='6' width='5' height='20' rx='1.5' fill='%23fb923c'/%3E%3C/svg%3E">
@@ -29,6 +29,7 @@
     --orange: #fb923c;
     --bad: #f87171;
     --info: #38bdf8;
+    --pc: #c084fc;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
@@ -67,11 +68,15 @@
   .lede { color: var(--muted); max-width: 580px; font-size: 1.05rem; }
 
   .app { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; scroll-margin-top: 76px; }
-  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid var(--line); }
+  .tab .nuevo { font-size: .62rem; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; background: var(--pc); color: #0b0f15; border-radius: 20px; padding: 2px 7px; }
+  .tab[data-tab="pc"] .dot { background: var(--pc); }
+  .tab[data-tab="pc"][aria-selected="true"] { border-bottom-color: var(--pc); }
   .tab {
     background: none; border: 0; border-bottom: 2px solid transparent;
     color: var(--muted); padding: 16px 10px; cursor: pointer;
     font: 700 .92rem 'Manrope', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px;
+    text-align: center; line-height: 1.25;
     transition: color .15s, background .15s;
   }
   .tab:hover { color: var(--text); }
@@ -104,6 +109,33 @@
   select:hover { border-color: #33435a; }
   select:focus-visible { outline: 2px solid var(--gpu); outline-offset: 1px; }
   select option, select optgroup { background: var(--bg); color: var(--text); }
+
+  .combo { position: relative; }
+  .combo-input {
+    width: 100%; min-width: 0;
+    background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238d9aab' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat right 13px center;
+    border: 1px solid var(--line); border-radius: 10px;
+    color: var(--text); padding: 12px 38px 12px 14px;
+    font: 700 .96rem 'Manrope', sans-serif; letter-spacing: 0; text-transform: none;
+  }
+  .combo-input::placeholder { color: #5e6b7c; }
+  .combo-input:hover { border-color: #33435a; }
+  .combo-input:focus { outline: 2px solid var(--gpu); outline-offset: 1px; }
+  .combo-list {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+    list-style: none; max-height: 300px; overflow-y: auto;
+    background: var(--panel-2); border: 1px solid #33435a; border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .45); padding: 6px;
+    text-transform: none; letter-spacing: 0;
+  }
+  .combo-list[hidden] { display: none; }
+  .combo-opt { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: .93rem; color: var(--text); }
+  .combo-opt small { color: var(--muted); font-weight: 600; margin-left: 4px; }
+  .combo-opt[aria-selected="true"], .combo-opt:hover { background: #22303f; }
+  .combo-opt.gen { color: #c4cedb; font-weight: 600; }
+  .combo-sep, .combo-empty { padding: 10px 12px 6px; font-size: .78rem; font-weight: 700; color: var(--muted); }
+  .combo-sep { border-top: 1px solid var(--line); margin-top: 4px; }
+  .combo-empty { color: var(--warn); }
   .swap {
     width: 46px; height: 46px; border-radius: 50%;
     border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
@@ -118,6 +150,42 @@
   .hl-gpu { color: var(--gpu); }
   .hl-cpu { color: var(--cpu); }
   .bars-title { font-size: .8rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin: 18px 0 10px; }
+  .pickers.pc { grid-template-columns: 1fr 160px 160px; }
+  .budget { margin-top: 16px; display: flex; flex-direction: column; gap: 7px; }
+  .budget-row { display: flex; align-items: center; gap: 16px; }
+  .budget-row input[type="range"] { flex: 1; accent-color: var(--pc); height: 6px; cursor: pointer; }
+  .budget-num { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 0 14px 0 4px; }
+  .budget-num:focus-within { outline: 2px solid var(--pc); outline-offset: 1px; }
+  .budget-num input { width: 96px; background: none; border: 0; color: var(--text); font: 800 1.15rem 'Chakra Petch', sans-serif; padding: 10px 6px; text-align: right; }
+  .budget-num input:focus { outline: none; }
+  .budget-num span { color: var(--muted); font-weight: 800; }
+
+  .build { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  .build-gauge .gauge svg { max-width: 270px; }
+  .build-parts { margin-top: 0; }
+  .parts { width: 100%; border-collapse: collapse; font-size: .92rem; min-width: 440px; }
+  .parts th, .parts td { padding: 10px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+  .parts tbody th { color: var(--muted); font-weight: 600; width: 26%; }
+  .parts td { font-weight: 700; }
+  .parts td.precio { color: var(--muted); font-weight: 600; white-space: nowrap; text-align: right; }
+  .parts td.link { text-align: right; white-space: nowrap; }
+  .parts tfoot th, .parts tfoot td { border-bottom: 0; padding-top: 14px; font-size: 1.05rem; }
+  .parts tfoot th { color: var(--text); font-weight: 800; }
+  .parts tfoot td.precio { color: var(--pc); font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 1.25rem; }
+  .amz-mini { color: var(--pc); font-weight: 800; font-size: .82rem; text-decoration: none; white-space: nowrap; }
+  .amz-mini::after { content: " →"; }
+  .amz-mini:hover { text-decoration: underline; }
+
+  .upgrades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .upg { background: var(--bg); border: 1px solid var(--line); border-top: 3px solid var(--pc); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .upg-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .upg-extra { font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--pc); }
+  .upg-fps { font-weight: 800; }
+  .upg-fps em { font-style: normal; color: var(--ok); margin-left: 4px; }
+  .upg ul { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: .88rem; color: #c4cedb; }
+  .upg-total { color: var(--muted); font-size: .82rem; }
+  .upg-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: auto; }
+
   .gauges { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .gauges.three { grid-template-columns: repeat(3, 1fr); }
   .gauges.four { grid-template-columns: repeat(4, 1fr); }
@@ -185,6 +253,12 @@
   .v-orange { border-left-color: var(--orange); } .v-orange .verdict-title { color: var(--orange); }
   .v-bad { border-left-color: var(--bad); } .v-bad .verdict-title { color: var(--bad); }
 
+  .compat { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .compat li { position: relative; padding: 11px 14px 11px 42px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-size: .93rem; color: #c4cedb; }
+  .compat li::before { position: absolute; left: 14px; top: 10px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: .72rem; font-weight: 900; color: var(--bg); }
+  .compat .cp-si::before { content: "✓"; background: var(--ok); }
+  .compat .cp-aviso { border-color: rgba(251, 191, 36, .35); }
+  .compat .cp-aviso::before { content: "!"; background: var(--warn); }
   .res-list { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .res-list li { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
   .res-list span { color: var(--muted); font-size: .8rem; font-weight: 700; }
@@ -226,6 +300,12 @@
     .pickers.three .field:last-child { grid-column: 1 / -1; }
     .cards { grid-template-columns: 1fr; }
     .gauges.four { grid-template-columns: repeat(2, 1fr); }
+    .tabs { grid-template-columns: repeat(3, 1fr); }
+    .pickers.pc { grid-template-columns: 1fr 1fr; }
+    .pickers.pc .field:first-child { grid-column: 1 / -1; }
+    .build { grid-template-columns: 1fr; }
+    .build-gauge { max-width: 320px; width: 100%; margin: 0 auto; }
+    .upgrades { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
     .wrap { padding: 0 16px; }
@@ -246,6 +326,20 @@
     .g-label { font-size: .85rem; }
     .g-sub { font-size: .74rem; }
     .amz { width: 100%; }
+    .tabs { grid-template-columns: 1fr 1fr; }
+    .tab[data-tab="pc"] { grid-column: 1 / -1; }
+    .pickers.pc { grid-template-columns: 1fr; }
+    .budget-row { flex-direction: column; align-items: stretch; gap: 12px; }
+    .budget-num { align-self: flex-start; }
+    .upgrades { grid-template-columns: 1fr; }
+    .parts { min-width: 0; }
+    .parts tbody tr, .parts tfoot tr { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .parts tfoot tr { border-bottom: 0; }
+    .parts th, .parts td { border-bottom: 0; padding: 0; }
+    .parts tbody th { grid-column: 1 / -1; width: auto; font-size: .7rem; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 2px; }
+    .parts td.link { grid-column: 1 / -1; text-align: left; margin-top: 4px; }
+    .parts td:empty { display: none; }
+    .parts tfoot th, .parts tfoot td { padding-top: 0; }
   }
 </style>
 </head>
@@ -257,8 +351,9 @@
     <nav class="links" aria-label="Herramientas">
       <a href="#gpu">Gráficas</a>
       <a href="#cpu">Procesadores</a>
-      <a href="#cuello">Cuello de botella</a>
+      <a href="#cuello">Compatibilidad</a>
       <a href="#fps">FPS por juego</a>
+      <a href="#pc">Tu PC ideal</a>
     </nav>
   </div>
 </header>
@@ -267,15 +362,16 @@
   <section class="hero">
     <span class="eyebrow">Comparador de hardware para PC</span>
     <h1>Lo que rinde tu PC,<br><span>sin rodeos.</span></h1>
-    <p class="lede">Compara gráficas y procesadores, comprueba si tu combinación tiene cuello de botella y calcula cuántos FPS vas a sacar en tu juego.</p>
+    <p class="lede">Compara gráficas y procesadores, comprueba si tu gráfica y tu procesador son compatibles, calcula cuántos FPS vas a sacar en tu juego o deja que te montemos el PC ideal para tu presupuesto.</p>
   </section>
 
   <section class="app" id="herramientas" aria-label="Herramientas de comparación">
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-gpu" data-tab="gpu" aria-controls="panel-gpu" aria-selected="true"><span class="dot"></span>Gráfica vs gráfica</button>
       <button class="tab" role="tab" id="tab-cpu" data-tab="cpu" aria-controls="panel-cpu" aria-selected="false" tabindex="-1"><span class="dot"></span>CPU vs CPU</button>
-      <button class="tab" role="tab" id="tab-cuello" data-tab="cuello" aria-controls="panel-cuello" aria-selected="false" tabindex="-1"><span class="dot"></span>Cuello de botella</button>
+      <button class="tab" role="tab" id="tab-cuello" data-tab="cuello" aria-controls="panel-cuello" aria-selected="false" tabindex="-1"><span class="dot"></span>Compatibilidad gráfica + procesador</button>
       <button class="tab" role="tab" id="tab-fps" data-tab="fps" aria-controls="panel-fps" aria-selected="false" tabindex="-1"><span class="dot"></span>FPS por juego</button>
+      <button class="tab" role="tab" id="tab-pc" data-tab="pc" aria-controls="panel-pc" aria-selected="false" tabindex="-1"><span class="dot"></span>Tu PC ideal<span class="nuevo">Nuevo</span></button>
     </div>
 
     <div class="panel" id="panel-gpu" role="tabpanel" aria-labelledby="tab-gpu">
@@ -299,7 +395,7 @@
     </div>
 
     <div class="panel" id="panel-cuello" role="tabpanel" aria-labelledby="tab-cuello" hidden>
-      <p class="panel-intro">Comprueba si tu procesador se queda corto para tu gráfica, o al revés, y qué te conviene mejorar.</p>
+      <p class="panel-intro">Comprueba si tu gráfica y tu procesador son compatibles, si uno se queda corto para el otro (cuello de botella) y qué te conviene mejorar.</p>
       <div class="pickers three">
         <label class="field">Tu gráfica <select id="bnGpu"></select></label>
         <label class="field">Tu procesador <select id="bnCpu"></select></label>
@@ -313,10 +409,41 @@
       <div class="pickers four">
         <label class="field">Tu gráfica <select id="fpsGpu"></select></label>
         <label class="field">Tu procesador <select id="fpsCpu"></select></label>
-        <label class="field">Juego <select id="fpsGame"></select></label>
+        <div class="field">
+          <label for="fpsGameInput">Juego</label>
+          <div class="combo">
+            <input id="fpsGameInput" class="combo-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fpsGameList" autocomplete="off" spellcheck="false" placeholder="Escribe un juego…">
+            <ul id="fpsGameList" class="combo-list" role="listbox" aria-label="Juegos" hidden></ul>
+          </div>
+          <select id="fpsGame" hidden tabindex="-1" aria-hidden="true"></select>
+        </div>
         <label class="field">Resolución <select id="fpsRes"></select></label>
       </div>
       <div class="result" id="fpsResult" aria-live="polite"></div>
+    </div>
+
+    <div class="panel" id="panel-pc" role="tabpanel" aria-labelledby="tab-pc" hidden>
+      <p class="panel-intro">Dinos a qué vas a jugar y cuánto quieres gastar, y te montamos el PC completo que más FPS te da por ese dinero.</p>
+      <div class="pickers pc">
+        <div class="field">
+          <label for="pcGameInput">Juego</label>
+          <div class="combo">
+            <input id="pcGameInput" class="combo-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pcGameList" autocomplete="off" spellcheck="false" placeholder="Escribe un juego…">
+            <ul id="pcGameList" class="combo-list" role="listbox" aria-label="Juegos" hidden></ul>
+          </div>
+          <select id="pcGame" hidden tabindex="-1" aria-hidden="true"></select>
+        </div>
+        <label class="field">Resolución <select id="pcRes"></select></label>
+        <label class="field">Calidad gráfica <select id="pcCal"></select></label>
+      </div>
+      <div class="budget">
+        <label class="field" for="pcBudget">Presupuesto máximo</label>
+        <div class="budget-row">
+          <input type="range" id="pcRange" min="500" max="4000" step="50" aria-label="Presupuesto máximo">
+          <div class="budget-num"><input type="number" id="pcBudget" min="300" step="50" inputmode="numeric"><span>€</span></div>
+        </div>
+      </div>
+      <div class="result" id="pcResult" aria-live="polite"></div>
     </div>
   </section>
 
@@ -329,9 +456,9 @@
         <p>Cada gráfica y procesador tiene una puntuación propia a partir de pruebas públicas en juegos. La RTX 4090 vale 100 en gráficas y el Ryzen 7 9800X3D vale 100 en procesadores.</p>
       </div>
       <div class="card">
-        <span class="num">02 · CUELLO DE BOTELLA</span>
-        <h3>Depende de la resolución</h3>
-        <p>Calculamos cuánta potencia de procesador necesita cada gráfica. En 1080p el procesador pesa mucho más que en 4K, donde casi todo el trabajo lo hace la gráfica.</p>
+        <span class="num">02 · COMPATIBILIDAD</span>
+        <h3>Que encajen y estén equilibradas</h3>
+        <p>Revisamos que la gráfica aproveche la conexión PCIe del procesador y calculamos cuánta potencia de procesador necesita según la resolución: en 1080p el procesador pesa mucho más que en 4K.</p>
       </div>
       <div class="card">
         <span class="num">03 · FPS POR JUEGO</span>
@@ -353,8 +480,8 @@
         <p>Pasa cuando una pieza no da abasto para la otra. Lo más habitual es que el procesador no prepare los fotogramas tan rápido como la gráfica los dibuja, y la gráfica se quede esperando sin rendir al máximo.</p>
       </details>
       <details>
-        <summary>¿Por qué no ponéis precios?</summary>
-        <p>Los precios cambian cada día. Por eso te llevamos directamente a Amazon, donde ves el precio y la disponibilidad actuales.</p>
+        <summary>¿Los precios son exactos?</summary>
+        <p>No. En "Tu PC ideal" usamos precios orientativos del mercado para poder ajustarnos a tu presupuesto, pero cambian cada día. Antes de comprar, mira el precio y la disponibilidad actuales en Amazon desde cada enlace.</p>
       </details>
       <details>
         <summary>¿Cómo se financia esta web?</summary>
