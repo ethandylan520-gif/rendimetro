@@ -494,7 +494,11 @@
 
     const e = elegido.est;
     const t = fpsTier(e.fps);
-    const lim = e.capped ? 'Límite del juego' : e.limit === 'gpu' ? 'Limita la gráfica' : 'Limita el procesador';
+    // Por encima de 60 FPS no tiene sentido hablar de qué pieza "limita": ya se juega de sobra.
+    let lim;
+    if (e.capped) lim = 'Al máximo del juego';
+    else if (e.fps >= 60) lim = 'Perfecto para jugar';
+    else lim = e.limit === 'gpu' ? 'Limita la gráfica' : 'Limita el procesador';
     const scale = escala(Math.max(e.fps, 60) * 1.05, ESC_FPS);
 
     const filas = elegido.partes.map(x => `<tr>
