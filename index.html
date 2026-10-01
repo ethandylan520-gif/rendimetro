@@ -73,8 +73,9 @@
     font-size: .75rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
   }
   .eyebrow::before { content: ""; width: 22px; height: 2px; background: linear-gradient(90deg, var(--gpu), var(--cpu)); }
-  .hero h1 { font-size: clamp(2.1rem, 5.2vw, 3.5rem); line-height: 1.06; margin: 16px 0 16px; }
+  .hero h1 { font-size: clamp(2.1rem, 5.2vw, 3.5rem); line-height: 1.06; margin: 16px 0 16px; text-wrap: balance; }
   .hero h1 span {
+    display: inline-block; text-wrap: balance;
     background: linear-gradient(90deg, var(--gpu), var(--cpu), var(--gpu)); background-size: 200% auto;
     -webkit-background-clip: text; background-clip: text; color: transparent;
     animation: degradado 5s linear infinite;
@@ -490,8 +491,8 @@
 <main class="wrap">
   <section class="hero">
     <span class="eyebrow">Comparador de hardware para PC</span>
-    <h1>Lo que rinde tu PC,<br><span>sin rodeos.</span></h1>
-    <p class="lede">Compara gráficas y procesadores, comprueba si tu gráfica y tu procesador son compatibles, calcula cuántos FPS vas a sacar en tu juego o deja que te montemos el PC ideal para tu presupuesto.</p>
+    <h1>Pon tu PC a pelear.<br><span>Gana el que más FPS saque.</span></h1>
+    <p class="lede">Enfrenta gráficas y procesadores, comprueba si tu gráfica y tu procesador se llevan bien, descubre cuántos FPS vas a sacar en tu juego o deja que te montemos el PC ideal para tu presupuesto.</p>
   </section>
 
   <section class="app" id="herramientas" aria-label="Herramientas de comparación">
