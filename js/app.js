@@ -217,7 +217,7 @@
     pintar(t0, n0);
 
     // suspense: la aguja tiembla y los números bailan como una tragaperras antes de revelar el valor.
-    const suspense = fig.dataset.suspense && efectos ? (arranque ? 1200 : 750) : 0;
+    const suspense = fig.dataset.suspense && efectos ? (arranque ? 900 : 600) : 0;
     const retraso = arranque ? (fig.dataset.delay ? Number(fig.dataset.delay) : orden * 140) : orden * 50;
     const subida = arranque && !suspense ? 520 : 0, pausa = subida ? 80 : 0, asentar = arranque ? 1000 : 850;
     // En el arranque la aguja sube hasta el final de la escala y luego cae a su valor (con un pequeño rebote).
@@ -235,7 +235,7 @@
         } else if (ms < subida + pausa + suspense) {
           const s = ms - subida - pausa;
           const azar = Math.abs(Math.sin(Math.floor(s / 55) * 12.9898) * 43758.5453) % 1;
-          pintar(0.5 + 0.4 * Math.sin(s / 65) * Math.cos(s / 210), azar * tope);
+          pintar(0.5 + 0.28 * Math.sin(s / 75) * Math.cos(s / 230), azar * tope);
         } else {
           base ??= { t: estado.t, n: estado.n };
           const p = Math.min(1, (ms - subida - pausa - suspense) / asentar);
@@ -1272,8 +1272,8 @@
     const caja = document.createElement('span');
     caja.className = 'confeti';
     caja.setAttribute('aria-hidden', 'true');
-    caja.innerHTML = Array.from({ length: 30 }, (_, i) => {
-      const ang = Math.random() * Math.PI * 2, dist = 70 + Math.random() * 150;
+    caja.innerHTML = Array.from({ length: 18 }, (_, i) => {
+      const ang = Math.random() * Math.PI * 2, dist = 50 + Math.random() * 100;
       return `<i style="--dx:${fix(Math.cos(ang) * dist)}px;--dy:${fix(Math.sin(ang) * dist - 50)}px;--r:${Math.round(Math.random() * 720 - 360)}deg;--col:${colores[i % colores.length]};--d:${Math.round(Math.random() * 120)}ms"></i>`;
     }).join('');
     cont.appendChild(caja);
