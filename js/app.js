@@ -632,6 +632,23 @@
 
   // ---------- Tu PC ideal ----------
   const COMPETITIVOS = ['cs2', 'valorant', 'lol', 'fortnite', 'apex', 'rivals', 'bo6', 'bf6'];
+  const VISUALES = ['cyberpunk', 'rdr2', 'alanwake2', 'wukong', 'mhwilds', 'acshadows', 'hogwarts', 'starfield', 'eldenring'];
+
+  // Cómo se reparte el presupuesto según el juego. En los competitivos el procesador pesa un poco más (FPS altos y
+  // estables); en los más gráficos, la gráfica. Solo un poco: los FPS mostrados son los reales y el PC sigue equilibrado.
+  const PERFILES = {
+    competitivo: { cpu: 0.9, gpu: 1, cpuPrecio: 0.22, txt: 'Como es un juego competitivo, el procesador pesa un poco más' },
+    grafico: { cpu: 1, gpu: 0.9, cpuPrecio: 0.18, txt: 'Como es un juego muy gráfico, la gráfica pesa un poco más' },
+    normal: { cpu: 1, gpu: 1, cpuPrecio: 0.22, txt: '' }
+  };
+  const perfilDe = j => (COMPETITIVOS.includes(j.id) || j.id === 'gen-ligero' ? PERFILES.competitivo
+    : VISUALES.includes(j.id) || j.id === 'gen-exigente' ? PERFILES.grafico : PERFILES.normal);
+
+  // Puntuación para elegir el PC: los mismos FPS estimados, pero dando algo menos de margen a la pieza que más importa.
+  function puntuar(e, perfil, j) {
+    const fps = Math.pow(Math.pow(e.gpuFps * perfil.gpu, -4) + Math.pow(e.cpuFps * perfil.cpu, -4), -0.25);
+    return j.cap ? Math.min(fps, j.cap) : fps;
+  }
   const PRESUPUESTO_MIN = 300, RANGO_MAX = 4000;
   const eur = n => `${Math.round(n).toLocaleString('es-ES')} €`;
 
@@ -675,8 +692,8 @@
   function mejorHasta(lista, tope) {
     const dentro = lista.filter(b => b.total <= tope);
     if (!dentro.length) return null;
-    const top = Math.max(...dentro.map(b => b.est.fps));
-    return dentro.filter(b => b.est.fps >= top * 0.98).sort((a, b) => a.total - b.total)[0];
+    const top = Math.max(...dentro.map(b => b.puntos));
+    return dentro.filter(b => b.puntos >= top * 0.98).sort((a, b) => a.total - b.total)[0];
   }
 
   const miniLink = q => `<a class="amz-mini" href="${amazonUrl(q)}" target="_blank" rel="sponsored noopener">Ver en Amazon</a>`;
@@ -696,9 +713,9 @@
 
   // Parejas que tienen sentido. El modelo de FPS medio no ve los mínimos, otros juegos ni el futuro, así que en juegos
   // que tiran de gráfica elegiría el procesador más barato aunque la gráfica cueste 1.000 €.
-  function encaja(g, c) {
+  function encaja(g, c, perfil = PERFILES.normal) {
     if (c.game < Math.min(95, g.idx * 0.65)) return false; // que no se quede muy corto en potencia
-    if (c.precio < Math.min(g.precio * 0.22, 350)) return false; // ni de gama: al menos el 22 % de la gráfica
+    if (c.precio < Math.min(g.precio * perfil.cpuPrecio, 350)) return false; // ni de gama: al menos un 18–27 % de la gráfica
     if (g.x8 && c.pcie3) return false; // gráfica de 8 líneas en PCIe 3.0 (aviso en Compatibilidad)
     if (g.brand === 'Intel' && c.game < 65) return false; // Intel Arc con procesador modesto (ídem)
     return true;
@@ -714,13 +731,15 @@
       return;
     }
     const res = RES[r].label;
+    const perfil = perfilDe(j);
     const lista = [];
     for (const g of GPUS) {
       if (!g.buy) continue;
       for (const c of CPUS) {
-        if (!c.buy || !encaja(g, c)) continue;
+        if (!c.buy || !encaja(g, c, perfil)) continue;
         const b = montar(g, c);
         b.est = estimar(g, c, j, r, p);
+        b.puntos = puntuar(b.est, perfil, j);
         lista.push(b);
       }
     }
@@ -817,7 +836,7 @@
 
     mostrar($('pcResult'), `
       <p class="headline">Tu PC para <strong>${nombre}</strong> en ${res} · calidad ${p.label} · hasta ${eur(presupuesto)}</p>
-      <p class="subline">PC equilibrado de <strong>gama ${elegido.gama.nombre}</strong>: ${elegido.gama.ram} GB de RAM, ${elegido.partes[4].nombre.replace('SSD NVMe', 'SSD de')}${elegido.gama.caja === 'buena' ? ' y caja con buena ventilación' : ''}, a juego con la gráfica.</p>
+      <p class="subline">PC equilibrado de <strong>gama ${elegido.gama.nombre}</strong>: ${elegido.gama.ram} GB de RAM, ${elegido.partes[4].nombre.replace('SSD NVMe', 'SSD de')}${elegido.gama.caja === 'buena' ? ' y caja con buena ventilación' : ''}, a juego con la gráfica.${perfil.txt ? ` ${perfil.txt}.` : ''}</p>
       <div class="build">
         <div class="build-gauge">
           ${gauge({ value: e.fps, scale, label: `${Math.round(e.fps)} FPS estimados`, sub: `<b class="t-${t.cls}">${t.label}</b> · ${lim}`, unit: 'FPS', color: t.cls, zonas: FPS_ZONAS, hot: e.fps >= 144 })}
