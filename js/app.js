@@ -518,7 +518,8 @@
       <ul class="res-list">${porRes}</ul>
       <p class="note">A más resolución, más trabaja la gráfica y menos importa el procesador.</p>
       ${extra}
-      ${extra.includes('class="rec') ? affNote : ''}`);
+      <div class="buy">${buyLink(g, 'gpu')}${buyLink(c, 'cpu')}</div>
+      ${affNote}`);
   }
 
   // ---------- FPS por juego ----------
@@ -606,8 +607,9 @@
       <p class="headline"><strong>${nombre}</strong> en ${res} con ${g.name} y ${c.name}</p>
       <div class="gauges four">${table}</div>
       ${notaGenerico('fpsGame', j)}${vram}${cap}${rec}
+      <div class="buy">${buyLink(g, 'gpu')}${buyLink(c, 'cpu')}</div>
       <p class="aff-note">Estimación orientativa sin DLSS/FSR ni generación de fotogramas: con reescalado puedes ganar bastante más.</p>
-      ${rec.includes('class="rec') ? affNote : ''}`);
+      ${affNote}`);
   }
 
   // ---------- Tu PC ideal ----------
