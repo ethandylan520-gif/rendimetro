@@ -276,6 +276,13 @@
   .g-burst line { stroke: var(--c); stroke-width: 2.4; stroke-linecap: round; }
   .hub { fill: var(--bg); stroke: var(--text); stroke-width: 2.5; }
   .g-read { fill: var(--text); font: 700 25px 'Chakra Petch', sans-serif; text-anchor: middle; font-variant-numeric: tabular-nums; transform-box: fill-box; transform-origin: center; }
+  /* Ruedas vacías mientras falta elegir una pieza */
+  .gauge.vacio { border-style: dashed; background: transparent; }
+  .gauge.vacio .needle { fill: var(--line-2); filter: none; }
+  .gauge.vacio .g-read { fill: var(--muted); animation: pregunta 1.6s ease-in-out infinite; }
+  .gauge.vacio .g-label { color: var(--muted); font-weight: 700; }
+  @keyframes pregunta { 50% { transform: scale(1.18); fill: var(--text); } }
+  .vacio-hint { color: var(--muted); }
   .g-badge {
     position: absolute; top: 10px; right: 10px; z-index: 1;
     font: 700 .72rem 'Chakra Petch', sans-serif; letter-spacing: 1.2px; line-height: 1.4;

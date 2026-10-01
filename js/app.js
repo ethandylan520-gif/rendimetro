@@ -90,7 +90,7 @@
   }
 
   // hot: valor de gama alta (brilla y la aguja tiembla al llegar). badge: etiqueta como "GANA". delay: retraso del arranque en ms.
-  function gauge({ value, scale, label, sub = '', unit, color, read, zonas, hot, badge, delay }) {
+  function gauge({ value, scale, label, sub = '', unit, color, read, zonas, hot, badge, delay, key }) {
     const [max, pasos] = scale;
     const t = Math.max(0, Math.min(1, value / max));
     const ang = G_START + G_SWEEP * t;
@@ -125,7 +125,7 @@
     }
 
     const fx = hot ? ' hot' : color === 'bad' ? ' alerta' : '';
-    return `<figure class="gauge k-${color}${fx}${badge ? ' win' : ''}" data-t="${t.toFixed(4)}" data-n="${n}"${delay != null ? ` data-delay="${delay}"` : ''}>
+    return `<figure class="gauge k-${color}${fx}${badge ? ' win' : ''}" data-t="${t.toFixed(4)}" data-n="${n}"${delay != null ? ` data-delay="${delay}"` : ''}${key ? ` data-key="${key}"` : ''}>
       <svg viewBox="0 0 200 162" role="img" aria-label="${label}: ${n} ${unit}">
         ${bandas}
         <path d="${arco(80, G_START, G_START + G_SWEEP)}" class="g-track"/>
@@ -139,6 +139,26 @@
       </svg>
       ${badge ? `<span class="g-badge">${badge}</span>` : ''}
       <figcaption><span class="g-label">${label}</span>${sub ? `<span class="g-sub">${sub}</span>` : ''}</figcaption>
+    </figure>`;
+  }
+
+  // Rueda vacía, con un "?", mientras falta elegir la pieza.
+  function gaugeVacio(label) {
+    let marcas = '';
+    for (let i = 0; i <= 20; i++) {
+      const deg = G_START + G_SWEEP * i / 20;
+      const [x1, y1] = polar(i % 4 === 0 ? 60 : 64, deg), [x2, y2] = polar(70, deg);
+      marcas += `<line x1="${fix(x1)}" y1="${fix(y1)}" x2="${fix(x2)}" y2="${fix(y2)}" class="${i % 4 === 0 ? 'tk-major' : 'tk'}"/>`;
+    }
+    return `<figure class="gauge vacio">
+      <svg viewBox="0 0 200 162" aria-hidden="true">
+        <path d="${arco(80, G_START, G_START + G_SWEEP)}" class="g-track"/>
+        ${marcas}
+        <polygon points="96.5,100 103.5,100 100,26" class="needle" style="transform:rotate(${G_START}deg)"/>
+        <circle cx="100" cy="100" r="7" class="hub"/>
+        <text x="100" y="141" class="g-read">?</text>
+      </svg>
+      <figcaption><span class="g-label">${label}</span></figcaption>
     </figure>`;
   }
 
@@ -262,9 +282,9 @@
       [...el.children].forEach((c, i) => c.style.setProperty('--i', i));
       reiniciarClase(el, como === 'arranque' ? 'reveal' : 'reveal-suave');
     }
-    el.querySelectorAll('.gauge').forEach((fig, i) => {
+    el.querySelectorAll('.gauge[data-t]').forEach((fig, i) => {
       fig.style.setProperty('--g', i);
-      moverAguja(fig, `${el.id}:${i}`, como, i);
+      moverAguja(fig, clave(el, fig, i), como, i);
     });
     contar(el, como);
     if (como === 'quieto') return;
@@ -288,8 +308,11 @@
     return r.height > 0 && r.bottom > 70 && r.top < innerHeight - Math.min(r.height * 0.35, 120);
   }
 
+  // Cada aguja se identifica por su lado (data-key) para que, al elegir la otra pieza, no herede la posición de otra.
+  const clave = (el, fig, i) => `${el.id}:${fig.dataset.key || i}`;
+
   function animar(el, como) {
-    const primera = el.querySelector('.gauge');
+    const primera = el.querySelector('.gauge[data-t]');
     if (sinMovimiento.matches || como === 'quieto' || !primera || aLaVista(primera)) {
       ejecutar(el, como);
       return;
@@ -297,8 +320,8 @@
     // Fuera de pantalla: dejamos las agujas a cero y arrancan cuando el usuario llega hasta ellas.
     const previa = esperando.get(el);
     if (previa) vigia.unobserve(previa);
-    el.querySelectorAll('.gauge').forEach((fig, i) => {
-      const key = `${el.id}:${i}`;
+    el.querySelectorAll('.gauge[data-t]').forEach((fig, i) => {
+      const key = clave(el, fig, i);
       cancelAnimationFrame(agujas.get(key)?.raf);
       clearTimeout(agujas.get(key)?.seguro);
       agujas.set(key, { t: 0, n: 0, raf: 0, seguro: 0 });
@@ -316,9 +339,10 @@
     animar(el, modo);
   }
 
-  function fillHardware(select, items, key) {
+  // Los selectores empiezan vacíos (para que en los vídeos se vea cómo eliges cada pieza).
+  function fillHardware(select, items, key, vacio) {
     const brands = [...new Set(items.map(i => i.brand))];
-    select.innerHTML = brands.map(b => {
+    select.innerHTML = `<option value="" disabled selected hidden>${vacio}</option>` + brands.map(b => {
       const opts = items.filter(i => i.brand === b)
         .sort((x, y) => y[key] - x[key])
         .map(i => `<option value="${i.id}">${i.name}</option>`).join('');
@@ -347,6 +371,17 @@
   // ---------- Gráfica vs gráfica ----------
   function renderGpu() {
     const a = GPU[$('gpuA').value], b = GPU[$('gpuB').value];
+    if (!a || !b) {
+      // Falta alguna: la que ya está elegida arranca su rueda y la otra espera con un "?".
+      const scale = escala(Math.max(a?.idx || 0, b?.idx || 0, 60) * 1.08, ESC_PTS);
+      const lado = (g, key, color) => (g
+        ? gauge({ value: g.idx, scale, label: g.name, sub: `${g.vram} GB · ${g.tdp} W`, unit: 'PTS', color, hot: g.idx >= 95, key })
+        : gaugeVacio('Elige una gráfica'));
+      mostrar($('gpuResult'), `
+        <p class="headline vacio-hint">${a || b ? 'Ahora elige su rival…' : 'Elige dos gráficas y que empiece la batalla'}</p>
+        <div class="gauges duelo">${lado(a, 'a', 'gpu')}${lado(b, 'b', 'gpu-b')}<span class="vs" aria-hidden="true">VS</span></div>`);
+      return;
+    }
     let head, gana = null;
     if (a === b) {
       head = 'Has elegido la misma gráfica en los dos lados.';
@@ -363,8 +398,8 @@
     mostrar($('gpuResult'), `
       <p class="headline">${head}</p>
       <div class="gauges duelo">
-        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu', hot: a.idx >= 95, badge: gana === a ? 'GANA' : '' })}
-        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b', hot: b.idx >= 95, badge: gana === b ? 'GANA' : '' })}
+        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu', hot: a.idx >= 95, badge: gana === a ? 'GANA' : '', key: 'a' })}
+        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b', hot: b.idx >= 95, badge: gana === b ? 'GANA' : '', key: 'b' })}
         <span class="vs" aria-hidden="true">VS</span>
       </div>
       <div class="table-wrap"><table class="specs">
@@ -384,6 +419,20 @@
   // ---------- Procesador vs procesador ----------
   function renderCpu() {
     const a = CPU[$('cpuA').value], b = CPU[$('cpuB').value];
+    if (!a || !b) {
+      const scaleG = escala(Math.max(a?.game || 0, b?.game || 0, 60) * 1.08, ESC_PTS);
+      const scaleM = escala(Math.max(a?.multi || 0, b?.multi || 0, 60) * 1.08, ESC_PTS);
+      const lado = (c, campo, scale, sub, key, color) => (c
+        ? gauge({ value: c[campo], scale, label: c.name, sub, unit: 'PTS', color, hot: c[campo] >= (campo === 'game' ? 88 : 90), key })
+        : gaugeVacio('Elige un procesador'));
+      mostrar($('cpuResult'), `
+        <p class="headline vacio-hint">${a || b ? 'Ahora elige su rival…' : 'Elige dos procesadores y que empiece la batalla'}</p>
+        <div class="duelos">
+          <div class="gauges duelo">${lado(a, 'game', scaleG, 'Juegos', 'aj', 'cpu')}${lado(b, 'game', scaleG, 'Juegos', 'bj', 'cpu-b')}<span class="vs" aria-hidden="true">VS</span></div>
+          <div class="gauges duelo">${lado(a, 'multi', scaleM, 'Productividad', 'am', 'cpu')}${lado(b, 'multi', scaleM, 'Productividad', 'bm', 'cpu-b')}<span class="vs" aria-hidden="true">VS</span></div>
+        </div>`);
+      return;
+    }
     let head, sub = '', ganaJ = null, ganaM = null;
     if (a === b) {
       head = 'Has elegido el mismo procesador en los dos lados.';
@@ -412,13 +461,13 @@
       ${sub ? `<p class="subline">${sub}</p>` : ''}
       <div class="duelos">
         <div class="gauges duelo">
-          ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu', hot: a.game >= 88, badge: badgeJ(a) })}
-          ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b', hot: b.game >= 88, badge: badgeJ(b) })}
+          ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu', hot: a.game >= 88, badge: badgeJ(a), key: 'aj' })}
+          ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b', hot: b.game >= 88, badge: badgeJ(b), key: 'bj' })}
           <span class="vs" aria-hidden="true">VS</span>
         </div>
         <div class="gauges duelo">
-          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Productividad', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a) })}
-          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Productividad', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b) })}
+          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Productividad', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a), key: 'am' })}
+          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Productividad', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b), key: 'bm' })}
           <span class="vs" aria-hidden="true">VS</span>
         </div>
       </div>
@@ -458,6 +507,18 @@
 
   function renderCuello() {
     const g = GPU[$('bnGpu').value], c = CPU[$('bnCpu').value], r = $('bnRes').value;
+    if (!g || !c) {
+      const potGpu = g
+        ? gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, key: 'gpu' })
+        : gaugeVacio('Elige tu gráfica');
+      const potCpu = c
+        ? gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, key: 'cpu' })
+        : gaugeVacio('Elige tu procesador');
+      mostrar($('bnResult'), `
+        <p class="headline vacio-hint">${g || c ? `Ahora elige tu ${g ? 'procesador' : 'gráfica'}…` : 'Elige tu gráfica y tu procesador para ver si se llevan bien'}</p>
+        <div class="gauges trio">${potGpu}${gaugeVacio('Compatibilidad')}${potCpu}</div>`);
+      return;
+    }
     const res = RES[r].label;
     const { need, feed, bn } = cuello(g, c, r);
     let tone, title, text, extra = '';
@@ -524,9 +585,9 @@
     // Primero arrancan la gráfica y el procesador; la compatibilidad, en el centro, llega la última.
     mostrar($('bnResult'), `
       <div class="gauges trio">
-        ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, delay: 0 })}
-        ${gauge({ value: puntos, scale: [100, 5], label: 'Compatibilidad', sub: `<b class="t-${compatTono}">${compatNota}</b>`, unit: '%', color: compatTono, hot: puntos >= 95, delay: 650 })}
-        ${gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, delay: 180 })}
+        ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, delay: 0, key: 'gpu' })}
+        ${gauge({ value: puntos, scale: [100, 5], label: 'Compatibilidad', sub: `<b class="t-${compatTono}">${compatNota}</b>`, unit: '%', color: compatTono, hot: puntos >= 95, delay: 650, key: 'compat' })}
+        ${gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, delay: 180, key: 'cpu' })}
       </div>
       <h3 class="bars-title">Compatibilidad</h3>
       ${compatHtml}
@@ -564,6 +625,14 @@
 
   function renderFps() {
     const g = GPU[$('fpsGpu').value], c = CPU[$('fpsCpu').value], j = JUEGO[$('fpsGame').value], r = $('fpsRes').value;
+    if (!g || !c || !j) {
+      const falta = [!g && 'tu gráfica', !c && 'tu procesador', !j && 'un juego'].filter(Boolean);
+      const lista = falta.length > 1 ? `${falta.slice(0, -1).join(', ')} y ${falta[falta.length - 1]}` : falta[0];
+      mostrar($('fpsResult'), `
+        <p class="headline vacio-hint">Elige ${lista} y te decimos cuántos FPS vas a sacar</p>
+        <div class="gauges four">${PRESETS.map(p => gaugeVacio(`Calidad ${p.label}`)).join('')}</div>`);
+      return;
+    }
     const nombre = nombreJuego('fpsGame', j);
     const res = RES[r].label;
     const rows = PRESETS.map(p => ({ p, ...estimar(g, c, j, r, p) }));
@@ -871,6 +940,7 @@
 
     const mostrarActual = () => {
       const j = JUEGO[select.value];
+      if (!j) { input.value = ''; return; }
       input.value = j.generic && select.dataset.custom ? select.dataset.custom : j.name;
     };
     const cerrar = () => {
@@ -1210,19 +1280,17 @@
   });
 
   // ---------- Arranque ----------
-  ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'idx'));
-  ['cpuA', 'cpuB', 'bnCpu', 'fpsCpu'].forEach(id => fillHardware($(id), CPUS, 'game'));
+  ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'idx', 'Elige una gráfica…'));
+  ['cpuA', 'cpuB', 'bnCpu', 'fpsCpu'].forEach(id => fillHardware($(id), CPUS, 'game', 'Elige un procesador…'));
   ['bnRes', 'fpsRes', 'pcRes'].forEach(id => fillRes($(id)));
   const juegosOpts = JUEGOS.map(j => `<option value="${j.id}">${j.name}</option>`).join('');
-  $('fpsGame').innerHTML = juegosOpts;
+  $('fpsGame').innerHTML = '<option value="" selected></option>' + juegosOpts;
   $('pcGame').innerHTML = juegosOpts;
   $('pcCal').innerHTML = PRESETS.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
 
   const defaults = {
-    gpuA: 'rtx5070', gpuB: 'rx9070',
-    cpuA: 'r7600', cpuB: 'i514400f',
-    bnGpu: 'rtx5070', bnCpu: 'r5600', bnRes: '1440',
-    fpsGpu: 'rtx4060', fpsCpu: 'r5600', fpsGame: 'cyberpunk', fpsRes: '1080',
+    // Las comparaciones empiezan vacías: las piezas las elige quien usa la web.
+    bnRes: '1440', fpsRes: '1080',
     pcGame: 'cyberpunk', pcRes: '1440', pcCal: 'alta', pcBudget: '1200', pcRange: '1200'
   };
   Object.entries(defaults).forEach(([id, v]) => { $(id).value = v; });
