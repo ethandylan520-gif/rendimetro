@@ -401,6 +401,60 @@
   .card p { color: var(--muted); font-size: .93rem; }
   .card .num { font-family: 'Chakra Petch', sans-serif; color: var(--gpu); font-size: .85rem; letter-spacing: 1px; display: block; margin-bottom: 10px; }
 
+  /* Todas las piezas */
+  .shop { scroll-margin-top: 60px; }
+  .shop-intro { color: var(--muted); margin: -10px 0 18px; max-width: 640px; }
+  .cats, .marcas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .cats::-webkit-scrollbar, .marcas::-webkit-scrollbar { display: none; }
+  .cat, .marca {
+    flex: none; display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    border-radius: 999px; padding: 9px 15px; cursor: pointer;
+    font: 700 .88rem 'Manrope', sans-serif; transition: color .15s, border-color .15s, background .15s;
+  }
+  .cat small { color: var(--placeholder); font-weight: 800; font-size: .75rem; }
+  .cat:hover, .marca:hover { color: var(--text); border-color: var(--line-2); }
+  .cat[aria-pressed="true"] { color: var(--ink); border-color: transparent; background: linear-gradient(90deg, var(--gpu), var(--cpu)); }
+  .cat[aria-pressed="true"] small { color: var(--ink); opacity: .7; }
+  .marcas { margin-top: 10px; }
+  .marcas:empty { display: none; }
+  .marca { padding: 6px 12px; font-size: .8rem; }
+  .marca[aria-pressed="true"] { color: var(--text); border-color: var(--text); }
+  .cat:focus-visible, .marca:focus-visible { outline: 2px solid var(--gpu); outline-offset: 2px; }
+
+  .items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+  .item {
+    display: flex; flex-direction: column; gap: 7px; min-width: 0;
+    background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--c) 8%, var(--panel)) 0%, var(--panel) 70%);
+    border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+  }
+  .item:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 55%, var(--line)); box-shadow: 0 10px 28px -12px color-mix(in srgb, var(--c) 60%, transparent); }
+  .item-brand { display: flex; align-items: center; gap: 6px; font-size: .68rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--c); }
+  .tag-old { font-style: normal; color: var(--muted); border: 1px solid var(--line-2); border-radius: 6px; padding: 0 5px; letter-spacing: .5px; }
+  .item-name { font-size: 1.05rem; line-height: 1.2; }
+  .item-sub { color: var(--muted); font-size: .8rem; }
+  .item-score { display: flex; align-items: center; gap: 8px; font-size: .74rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .item-bar { flex: 1; height: 6px; border-radius: 6px; background: var(--track); overflow: hidden; }
+  .item-bar i { display: block; height: 100%; border-radius: 6px; background: var(--c); box-shadow: 0 0 8px var(--c); }
+  .item-foot { margin-top: auto; padding-top: 4px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+  .item-precio { font-family: 'Chakra Petch', sans-serif; font-weight: 700; color: var(--pc); }
+  .item-buy {
+    margin-left: auto; text-decoration: none; white-space: nowrap;
+    background: var(--c); color: var(--ink); font-weight: 800; font-size: .8rem;
+    padding: 8px 12px; border-radius: 9px; transition: filter .15s;
+  }
+  .item-buy:hover { filter: brightness(1.12); }
+  .items-sep { grid-column: 1 / -1; color: var(--muted); font-size: .82rem; font-weight: 700; padding-top: 10px; border-top: 1px solid var(--line); }
+  .items.reveal .item.nueva { animation: entra .4s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(min(var(--n, 0), 12) * 35ms); }
+  .shop-more { display: flex; justify-content: center; margin-top: 16px; }
+  .shop-more:empty { display: none; }
+  .shop-more button {
+    border: 1px solid var(--line-2); background: var(--panel-2); color: var(--text);
+    border-radius: 999px; padding: 11px 20px; cursor: pointer; font: 800 .9rem 'Manrope', sans-serif;
+  }
+  .shop-more button:hover { border-color: var(--gpu); }
+
   .faq { display: flex; flex-direction: column; gap: 10px; }
   .faq details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
   .faq summary { cursor: pointer; font-weight: 800; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
@@ -420,6 +474,7 @@
     .cards { grid-template-columns: 1fr; }
     .gauges.four { grid-template-columns: repeat(2, 1fr); }
     .duelos { grid-template-columns: 1fr; }
+    .items { grid-template-columns: repeat(3, 1fr); }
     .tabs { grid-template-columns: repeat(3, 1fr); }
     .pickers.pc { grid-template-columns: 1fr 1fr; }
     .pickers.pc .field:first-child { grid-column: 1 / -1; }
@@ -448,6 +503,10 @@
     .duelos { gap: 10px; }
     .vs { width: 36px; height: 36px; margin: -18px 0 0 -18px; font-size: .8rem; box-shadow: 0 0 0 4px var(--panel), 0 6px 18px rgba(0, 0, 0, .5); }
     .g-badge { top: 6px; right: 6px; font-size: .6rem; padding: 2px 7px; }
+    .items { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .item { padding: 12px; }
+    .item-name { font-size: .95rem; }
+    .item-buy { padding: 7px 10px; font-size: .76rem; }
     .gauges.trio .g-sub { font-size: .66rem; line-height: 1.25; }
     .gauge { padding: 10px 6px 12px; border-radius: 14px; }
     .g-label { font-size: .85rem; }
@@ -484,6 +543,7 @@
       <a href="#cuello">Compatibilidad</a>
       <a href="#fps">FPS por juego</a>
       <a href="#pc">Tu PC ideal</a>
+      <a href="#piezas">Comprar</a>
     </nav>
   </div>
 </header>
@@ -575,6 +635,16 @@
       </div>
       <div class="result" id="pcResult" aria-live="polite"></div>
     </div>
+  </section>
+
+  <section class="info shop" id="piezas" aria-labelledby="piezas-titulo">
+    <h2 id="piezas-titulo">Todas las piezas</h2>
+    <p class="shop-intro">Elige una categoría y mira cada pieza en Amazon. Las gráficas y los procesadores van ordenados de más a menos potentes.</p>
+    <div class="cats" id="shopCats" role="group" aria-label="Categoría"></div>
+    <div class="marcas" id="shopMarcas" role="group" aria-label="Marca"></div>
+    <div class="items" id="shopItems"></div>
+    <div class="shop-more" id="shopMore"></div>
+    <p class="aff-note">Precios orientativos del mercado español: el precio real puede variar, consúltalo en Amazon. Enlaces de afiliado: si compras a través de ellos, esta web recibe una pequeña comisión sin coste extra para ti.</p>
   </section>
 
   <section class="info" id="como-funciona">

@@ -152,3 +152,71 @@ window.PIEZAS = {
     liquida: { nombre: 'Refrigeración líquida 360 mm', precio: 90, q: { es: 'refrigeración líquida 360mm', en: '360mm AIO liquid cooler' } }
   }
 };
+
+// Resto de categorías de "Todas las piezas" (las gráficas y los procesadores salen de GPUS y CPUS).
+// Las piezas que también usa "Tu PC ideal" reutilizan su precio; el resto va sin precio.
+(() => {
+  const P = window.PIEZAS;
+  const q = (es, en) => ({ es, en });
+  window.TIENDA = [
+    { id: 'placas', nombre: 'Placas base', items: [
+      { name: 'Placa base B550', sub: 'AM4 · DDR4 · para Ryzen 5000', precio: P.plataformas.AM4.precio, q: P.plataformas.AM4.q },
+      { name: 'Placa base X570', sub: 'AM4 · DDR4 · gama alta', q: q('placa base X570 AM4', 'X570 AM4 motherboard') },
+      { name: 'Placa base B650', sub: 'AM5 · DDR5 · para Ryzen 7000 y 9000', precio: P.plataformas.AM5.precio, q: P.plataformas.AM5.q },
+      { name: 'Placa base B850', sub: 'AM5 · DDR5 · PCIe 5.0', q: q('placa base B850 AM5', 'B850 AM5 motherboard') },
+      { name: 'Placa base X870', sub: 'AM5 · DDR5 · gama alta', q: q('placa base X870 AM5', 'X870 AM5 motherboard') },
+      { name: 'Placa base B760', sub: 'LGA1700 · DDR5 · Intel 12.ª a 14.ª gen.', precio: P.plataformas.LGA1700.precio, q: P.plataformas.LGA1700.q },
+      { name: 'Placa base Z790', sub: 'LGA1700 · DDR5 · para overclock', q: q('placa base Z790 DDR5', 'Z790 DDR5 motherboard') },
+      { name: 'Placa base B860', sub: 'LGA1851 · DDR5 · Core Ultra', precio: P.plataformas.LGA1851.precio, q: P.plataformas.LGA1851.q },
+      { name: 'Placa base Z890', sub: 'LGA1851 · DDR5 · gama alta', q: q('placa base Z890 LGA1851', 'Z890 LGA1851 motherboard') }
+    ] },
+    { id: 'ram', nombre: 'Memoria RAM', items: [
+      { name: '16 GB DDR4 3200', sub: '2 × 8 GB · para AM4', precio: P.ram.DDR4[16].precio, q: P.ram.DDR4[16].q },
+      { name: '32 GB DDR4 3600', sub: '2 × 16 GB · para AM4', precio: P.ram.DDR4[32].precio, q: P.ram.DDR4[32].q },
+      { name: '16 GB DDR5 6000', sub: 'Para AM5 e Intel actuales', precio: P.ram.DDR5[16].precio, q: P.ram.DDR5[16].q },
+      { name: '32 GB DDR5 6000 CL30', sub: '2 × 16 GB · la más recomendada para jugar', precio: P.ram.DDR5[32].precio, q: P.ram.DDR5[32].q },
+      { name: '64 GB DDR5 6000', sub: '2 × 32 GB · edición y streaming', q: q('memoria RAM DDR5 64GB 6000 2x32GB', 'DDR5 64GB 6000 RAM 2x32GB') }
+    ] },
+    { id: 'ssd', nombre: 'Almacenamiento', items: [
+      { name: 'SSD NVMe 500 GB', sub: 'PCIe 4.0 · para el sistema', q: q('SSD NVMe 500GB PCIe 4.0', '500GB NVMe SSD PCIe 4.0') },
+      { name: 'SSD NVMe 1 TB', sub: 'PCIe 4.0 · el punto justo', precio: P.ssd.precio, q: P.ssd.q },
+      { name: 'SSD NVMe 2 TB', sub: 'PCIe 4.0 · para muchos juegos', q: q('SSD NVMe 2TB PCIe 4.0', '2TB NVMe SSD PCIe 4.0') },
+      { name: 'SSD NVMe 4 TB', sub: 'PCIe 4.0 · biblioteca enorme', q: q('SSD NVMe 4TB PCIe 4.0', '4TB NVMe SSD PCIe 4.0') },
+      { name: 'Disco duro 4 TB', sub: 'HDD · copias y archivos', q: q('disco duro interno 4TB 3.5', '4TB internal hard drive 3.5') }
+    ] },
+    { id: 'fuentes', nombre: 'Fuentes', items: P.fuentes.map(f => ({
+      name: `Fuente ${f.w} W`, sub: '80 Plus Gold', precio: f.precio,
+      q: q(`fuente alimentación ${f.w}W 80 Plus Gold`, `${f.w}W 80 Plus Gold power supply`)
+    })) },
+    { id: 'cajas', nombre: 'Cajas', items: [
+      { name: P.cajas.basica.nombre, sub: 'Sencilla y barata', precio: P.cajas.basica.precio, q: P.cajas.basica.q },
+      { name: P.cajas.buena.nombre, sub: 'Frontal de malla, buena temperatura', precio: P.cajas.buena.precio, q: P.cajas.buena.q },
+      { name: 'Caja con cristal templado RGB', sub: 'Ventiladores RGB incluidos', q: q('caja PC ATX cristal templado ventiladores RGB', 'ATX PC case tempered glass RGB fans') },
+      { name: 'Caja Micro-ATX compacta', sub: 'Para PCs pequeños', q: q('caja PC Micro ATX', 'Micro ATX PC case') }
+    ] },
+    { id: 'refri', nombre: 'Refrigeración', items: [
+      { name: P.disipadores.aire.nombre, sub: 'Para procesadores de gama media', precio: P.disipadores.aire.precio, q: P.disipadores.aire.q },
+      { name: 'Disipador de doble torre', sub: 'Para procesadores potentes', q: q('disipador CPU doble torre', 'dual tower CPU air cooler') },
+      { name: 'Refrigeración líquida 240 mm', sub: 'AIO · cabe en casi cualquier caja', q: q('refrigeración líquida 240mm', '240mm AIO liquid cooler') },
+      { name: P.disipadores.liquida.nombre, sub: 'AIO · para gama alta', precio: P.disipadores.liquida.precio, q: P.disipadores.liquida.q },
+      { name: 'Ventiladores de caja 120 mm', sub: 'Pack de 3 · más flujo de aire', q: q('ventiladores PC 120mm pack 3', '120mm PC case fans 3 pack') },
+      { name: 'Pasta térmica', sub: 'Para cambiar la del procesador', q: q('pasta térmica CPU', 'CPU thermal paste') }
+    ] },
+    { id: 'monitores', nombre: 'Monitores', items: [
+      { name: 'Monitor 24" 1080p 165 Hz', sub: 'Para eSports y presupuestos ajustados', q: q('monitor gaming 24 pulgadas 1080p 165Hz', '24 inch 1080p 165Hz gaming monitor') },
+      { name: 'Monitor 27" 1440p 180 Hz', sub: 'El más equilibrado para jugar', q: q('monitor gaming 27 pulgadas 1440p 180Hz', '27 inch 1440p 180Hz gaming monitor') },
+      { name: 'Monitor 27" 1440p OLED', sub: 'Colores y respuesta brutales', q: q('monitor gaming OLED 27 pulgadas 1440p', '27 inch 1440p OLED gaming monitor') },
+      { name: 'Monitor 27" 4K 144 Hz', sub: 'Para gráficas de gama alta', q: q('monitor gaming 27 pulgadas 4K 144Hz', '27 inch 4K 144Hz gaming monitor') },
+      { name: 'Monitor ultrapanorámico 34"', sub: '3440 × 1440 · inmersión total', q: q('monitor gaming ultrapanorámico 34 pulgadas', '34 inch ultrawide gaming monitor') }
+    ] },
+    { id: 'perifericos', nombre: 'Periféricos', items: [
+      { name: 'Teclado mecánico gaming', sub: 'Interruptores mecánicos y RGB', q: q('teclado mecánico gaming', 'mechanical gaming keyboard') },
+      { name: 'Ratón gaming ligero', sub: 'Inalámbrico, para shooters', q: q('ratón gaming inalámbrico ligero', 'lightweight wireless gaming mouse') },
+      { name: 'Auriculares gaming', sub: 'Con micrófono', q: q('auriculares gaming con micrófono', 'gaming headset with microphone') },
+      { name: 'Alfombrilla XXL', sub: 'Para teclado y ratón', q: q('alfombrilla ratón XXL gaming', 'XXL gaming mouse pad') },
+      { name: 'Mando para PC', sub: 'Inalámbrico', q: q('mando inalámbrico PC', 'wireless PC controller') },
+      { name: 'Micrófono para streaming', sub: 'USB', q: q('micrófono USB streaming', 'USB streaming microphone') },
+      { name: 'Webcam 1080p', sub: 'Para streaming y llamadas', q: q('webcam 1080p streaming', '1080p streaming webcam') }
+    ] }
+  ];
+})();

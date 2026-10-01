@@ -921,6 +921,96 @@
     mostrarActual();
   }
 
+  // ---------- Todas las piezas ----------
+  const CATS = [
+    { id: 'gpu', nombre: 'Gráficas', marcas: ['NVIDIA', 'AMD', 'Intel'] },
+    { id: 'cpu', nombre: 'Procesadores', marcas: ['AMD', 'Intel'] },
+    ...TIENDA
+  ];
+  const VISIBLES = 12;
+  const shop = { cat: 'gpu', marca: '', todo: false };
+
+  // Gráficas y procesadores: primero los que se venden nuevos, de más a menos potentes; luego las generaciones anteriores.
+  function piezasDe(cat) {
+    const orden = (a, b) => Number(Boolean(b.buy)) - Number(Boolean(a.buy));
+    if (cat.id === 'gpu') {
+      return [...GPUS].sort((a, b) => orden(a, b) || b.idx - a.idx).map(g => ({
+        k: 'gpu', marca: g.brand, name: g.name, sub: `${g.vram} GB · ${g.tdp} W · ${g.year}`,
+        barra: g.idx / GPU_TOP, puntos: `${g.idx} pts`, precio: g.precio, q: qGpu(g), antigua: !g.buy
+      }));
+    }
+    if (cat.id === 'cpu') {
+      return [...CPUS].sort((a, b) => orden(a, b) || b.game - a.game).map(c => ({
+        k: 'cpu', marca: c.brand, name: c.name, sub: `${c.cores} núcleos · ${c.threads} hilos · ${c.socket}`,
+        barra: c.game / CPU_TOP, puntos: `${c.game} pts juegos`, precio: c.precio, q: qCpu(c), antigua: !c.buy
+      }));
+    }
+    return cat.items.map(x => ({ k: 'info', marca: cat.nombre, ...x }));
+  }
+
+  function tarjetaPieza(x, n, nueva) {
+    const barra = x.barra != null
+      ? `<div class="item-score"><div class="item-bar"><i style="width:${Math.round(x.barra * 100)}%"></i></div><span>${x.puntos}</span></div>`
+      : '';
+    return `<article class="item k-${x.k}${nueva ? ' nueva' : ''}" style="--n:${n}">
+        <span class="item-brand">${x.marca}${x.antigua ? '<em class="tag-old">Anterior</em>' : ''}</span>
+        <h3 class="item-name">${x.name}</h3>
+        <p class="item-sub">${x.sub}</p>
+        ${barra}
+        <div class="item-foot">
+          ${x.precio ? `<span class="item-precio">~${eur(x.precio)}</span>` : ''}
+          <a class="item-buy" href="${amazonUrl(x.q)}" target="_blank" rel="sponsored noopener" aria-label="Ver ${escapeHtml(x.name)} en Amazon">Ver en Amazon</a>
+        </div>
+      </article>`;
+  }
+
+  // animarDesde: índice a partir del cual las tarjetas entran animadas (sin valor = sin animación).
+  function renderShop(animarDesde) {
+    const cat = CATS.find(c => c.id === shop.cat);
+    // Las categorías se pintan una vez; después solo cambia la marcada, para no perder el scroll lateral en móvil.
+    if (!$('shopCats').children.length) {
+      $('shopCats').innerHTML = CATS.map(c =>
+        `<button type="button" class="cat" data-cat="${c.id}">${c.nombre} <small>${piezasDe(c).length}</small></button>`).join('');
+    }
+    $('shopCats').querySelectorAll('.cat').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === shop.cat)));
+    $('shopMarcas').innerHTML = cat.marcas
+      ? ['', ...cat.marcas].map(m => `<button type="button" class="marca" data-marca="${m}" aria-pressed="${m === shop.marca}">${m || 'Todas'}</button>`).join('')
+      : '';
+
+    const todas = piezasDe(cat).filter(x => !shop.marca || x.marca === shop.marca);
+    const vistas = shop.todo ? todas : todas.slice(0, VISIBLES);
+    const primeraAntigua = vistas.findIndex(x => x.antigua);
+    $('shopItems').innerHTML = vistas.map((x, i) => {
+      const sep = i === primeraAntigua
+        ? '<p class="items-sep">Generaciones anteriores: ya no se venden nuevas, pero suelen encontrarse de segunda mano o reacondicionadas.</p>'
+        : '';
+      const nueva = animarDesde != null && i >= animarDesde;
+      return sep + tarjetaPieza(x, nueva ? i - animarDesde : 0, nueva);
+    }).join('');
+    $('shopMore').innerHTML = vistas.length < todas.length
+      ? `<button type="button">Ver todas (${todas.length})</button>`
+      : '';
+    if (animarDesde != null && !sinMovimiento.matches) reiniciarClase($('shopItems'), 'reveal');
+  }
+
+  $('shopCats').addEventListener('click', e => {
+    const b = e.target.closest('[data-cat]');
+    if (!b || b.dataset.cat === shop.cat) return;
+    Object.assign(shop, { cat: b.dataset.cat, marca: '', todo: false });
+    renderShop(0);
+  });
+  $('shopMarcas').addEventListener('click', e => {
+    const b = e.target.closest('[data-marca]');
+    if (!b || b.dataset.marca === shop.marca) return;
+    Object.assign(shop, { marca: b.dataset.marca, todo: false });
+    renderShop(0);
+  });
+  $('shopMore').addEventListener('click', e => {
+    if (!e.target.closest('button')) return;
+    shop.todo = true;
+    renderShop(VISIBLES);
+  });
+
   // ---------- Pestañas ----------
   const tabs = [...document.querySelectorAll('.tab')];
 
@@ -972,6 +1062,7 @@
   Object.entries(defaults).forEach(([id, v]) => { $(id).value = v; });
   initCombo('fps');
   initCombo('pc');
+  renderShop();
 
   $('pcRange').addEventListener('input', () => {
     $('pcBudget').value = $('pcRange').value;
