@@ -70,7 +70,7 @@
     animation: degradado 5s linear infinite;
   }
   .lede { color: var(--muted); max-width: 580px; font-size: 1.05rem; }
-  .hero > * { animation: entra .7s cubic-bezier(.2, .8, .2, 1) both; }
+  .hero > * { animation: entra .7s cubic-bezier(.2, .8, .2, 1) backwards; }
   .hero h1 { animation-delay: .08s; }
   .hero .lede { animation-delay: .16s; }
   @keyframes degradado { to { background-position: 200% 50%; } }
@@ -112,8 +112,8 @@
 
   .panel { padding: 26px; }
   .panel[hidden] { display: none; }
-  .panel > .panel-intro, .panel > .pickers, .panel > .budget { animation: entra .4s cubic-bezier(.2, .8, .2, 1) both; }
-  .panel > .pickers { animation-delay: .05s; }
+  .panel > .panel-intro, .panel > .pickers, .panel > .budget { animation: entra .4s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .panel > .pickers { animation-delay: .05s; position: relative; z-index: 20; }
   .panel > .budget { animation-delay: .1s; }
   .panel-intro { color: var(--muted); font-size: .95rem; margin-bottom: 20px; }
 
@@ -283,15 +283,15 @@
   .t-info { color: var(--info); }
 
   /* Entrada de resultados: en cascada al abrir la pestaña, suave al cambiar una opción. */
-  .result.reveal > * { animation: entra .55s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 85ms); }
-  .result.reveal .gauge { animation: aparece .5s cubic-bezier(.2, 1.4, .4, 1) both; animation-delay: calc(var(--g, 0) * 90ms); }
-  .result.reveal .vs { animation: choque .6s cubic-bezier(.2, 1.6, .4, 1) .35s both; }
+  .result.reveal > * { animation: entra .55s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(var(--i, 0) * 85ms); }
+  .result.reveal .gauge { animation: aparece .5s cubic-bezier(.2, 1.4, .4, 1) backwards; animation-delay: calc(var(--g, 0) * 90ms); }
+  .result.reveal .vs { animation: choque .6s cubic-bezier(.2, 1.6, .4, 1) .35s backwards; }
   .result.reveal .compat li::before { animation: sello .45s cubic-bezier(.2, 1.6, .4, 1) both; animation-delay: calc(.5s + var(--k, 0) * .12s); }
-  .result.reveal .res-list li { animation: entra .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(.6s + var(--k, 0) * .09s); }
-  .result.reveal .parts tbody tr { animation: fila .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(.3s + var(--f, 0) * 70ms); }
-  .result.reveal .upg { animation: entra .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(.5s + var(--u, 0) * .1s); }
-  .result.reveal-suave > * { animation: entra-suave .3s ease-out both; }
-  .result.reveal-suave .vs { animation: choque .45s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .result.reveal .res-list li { animation: entra .45s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(.6s + var(--k, 0) * .09s); }
+  .result.reveal .parts tbody tr { animation: fila .45s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(.3s + var(--f, 0) * 70ms); }
+  .result.reveal .upg { animation: entra .5s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(.5s + var(--u, 0) * .1s); }
+  .result.reveal-suave > * { animation: entra-suave .3s ease-out backwards; }
+  .result.reveal-suave .vs { animation: choque .45s cubic-bezier(.2, 1.6, .4, 1) backwards; }
   @keyframes entra { from { opacity: 0; transform: translateY(16px); } }
   @keyframes entra-suave { from { opacity: .4; transform: translateY(4px); } }
   @keyframes aparece { from { opacity: 0; transform: scale(.86) translateY(10px); } }
