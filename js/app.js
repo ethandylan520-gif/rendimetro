@@ -380,8 +380,8 @@
       const dm = diff(mw.multi, ml.multi);
       if (dm >= 3) ganaM = mw;
       sub = dm < 3
-        ? 'En tareas multinúcleo (edición de vídeo, streaming, renderizado) van a la par.'
-        : `En tareas multinúcleo (edición de vídeo, streaming, renderizado) gana el ${mw.name} por un <span data-cuenta="${dm}">${dm}</span>%.`;
+        ? 'En productividad (edición de vídeo, streaming, renderizado) van a la par.'
+        : `En productividad (edición de vídeo, streaming, renderizado) gana el ${mw.name} por un <span data-cuenta="${dm}">${dm}</span>%.`;
     }
     const scaleG = escala(Math.max(a.game, b.game) * 1.08, ESC_PTS);
     const scaleM = escala(Math.max(a.multi, b.multi) * 1.08, ESC_PTS);
@@ -399,8 +399,8 @@
           <span class="vs" aria-hidden="true">VS</span>
         </div>
         <div class="gauges duelo">
-          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a) })}
-          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b) })}
+          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Productividad', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a) })}
+          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Productividad', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b) })}
           <span class="vs" aria-hidden="true">VS</span>
         </div>
       </div>

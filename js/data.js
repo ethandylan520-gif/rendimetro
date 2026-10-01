@@ -1,5 +1,5 @@
 // Precios orientativos de mercado en España (septiembre 2026): revísalos de vez en cuando.
-// Índice propio orientativo. Gráficas: RTX 4090 = 100 (1440p). Procesadores en juegos: Ryzen 7 9800X3D = 100; multinúcleo: Ryzen 9 9950X = 100.
+// Índice propio orientativo. Gráficas: RTX 4090 = 100 (1440p). Procesadores en juegos: Ryzen 7 9800X3D = 100; productividad: Ryzen 9 9950X = 100.
 window.GPUS = [
   { id: 'rtx5090', name: 'RTX 5090', brand: 'NVIDIA', idx: 127, vram: 32, tdp: 575, year: 2025, buy: true, precio: 2300 },
   { id: 'rtx5080', name: 'RTX 5080', brand: 'NVIDIA', idx: 82, vram: 16, tdp: 360, year: 2025, buy: true, precio: 1100 },
