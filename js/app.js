@@ -684,6 +684,16 @@
     return Number.isFinite(v) && v >= PRESUPUESTO_MIN ? v : null;
   }
 
+  // Parejas que tienen sentido. El modelo de FPS medio no ve los mínimos, otros juegos ni el futuro, así que en juegos
+  // que tiran de gráfica elegiría el procesador más barato aunque la gráfica cueste 1.000 €.
+  function encaja(g, c) {
+    if (c.game < Math.min(95, g.idx * 0.65)) return false; // que no se quede muy corto en potencia
+    if (c.precio < Math.min(g.precio * 0.22, 350)) return false; // ni de gama: al menos el 22 % de la gráfica
+    if (g.x8 && c.pcie3) return false; // gráfica de 8 líneas en PCIe 3.0 (aviso en Compatibilidad)
+    if (g.brand === 'Intel' && c.game < 65) return false; // Intel Arc con procesador modesto (ídem)
+    return true;
+  }
+
   function renderPc() {
     const j = JUEGO[$('pcGame').value], r = $('pcRes').value;
     const nombre = nombreJuego('pcGame', j);
@@ -698,10 +708,8 @@
     const lista = [];
     for (const g of GPUS) {
       if (!g.buy) continue;
-      // El modelo de FPS medio no ve los mínimos ni otros juegos: evitamos procesadores muy por debajo de la gráfica.
-      const cpuMin = Math.min(95, g.idx * 0.65);
       for (const c of CPUS) {
-        if (!c.buy || c.game < cpuMin) continue;
+        if (!c.buy || !encaja(g, c)) continue;
         const b = montar(g, c, grande);
         b.est = estimar(g, c, j, r, p);
         lista.push(b);
