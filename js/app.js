@@ -1284,7 +1284,7 @@
 
   // ---------- Arranque ----------
   ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'idx', 'Elige una gráfica…', true));
-  ['cpuA', 'cpuB', 'bnCpu', 'fpsCpu'].forEach(id => fillHardware($(id), CPUS, 'game', 'Elige un procesador…'));
+  ['cpuA', 'cpuB', 'bnCpu', 'fpsCpu'].forEach(id => fillHardware($(id), CPUS, 'game', 'Elige un procesador…', true));
   ['bnRes', 'fpsRes', 'pcRes'].forEach(id => fillRes($(id)));
   const juegosOpts = JUEGOS.map(j => `<option value="${j.id}">${j.name}</option>`).join('');
   $('fpsGame').innerHTML = '<option value="" selected></option>' + juegosOpts;
