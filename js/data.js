@@ -128,27 +128,27 @@ window.JUEGOS = [
 // Resto de piezas para "Tu PC ideal". Precios orientativos.
 window.PIEZAS = {
   plataformas: {
-    AM4: { chipset: 'Placa base B550', ram: 'DDR4', precio: 95, q: 'placa base B550 AM4' },
-    AM5: { chipset: 'Placa base B650', ram: 'DDR5', precio: 150, q: 'placa base B650 AM5' },
-    LGA1700: { chipset: 'Placa base B760', ram: 'DDR5', precio: 130, q: 'placa base B760 DDR5' },
-    LGA1851: { chipset: 'Placa base B860', ram: 'DDR5', precio: 170, q: 'placa base B860 LGA1851' }
+    AM4: { chipset: 'Placa base B550', ram: 'DDR4', precio: 95, q: { es: 'placa base B550 AM4', en: 'B550 AM4 motherboard' } },
+    AM5: { chipset: 'Placa base B650', ram: 'DDR5', precio: 150, q: { es: 'placa base B650 AM5', en: 'B650 AM5 motherboard' } },
+    LGA1700: { chipset: 'Placa base B760', ram: 'DDR5', precio: 130, q: { es: 'placa base B760 DDR5', en: 'B760 DDR5 motherboard' } },
+    LGA1851: { chipset: 'Placa base B860', ram: 'DDR5', precio: 170, q: { es: 'placa base B860 LGA1851', en: 'B860 LGA1851 motherboard' } }
   },
   ram: {
-    DDR4: { 16: { precio: 75, q: 'memoria RAM DDR4 16GB 3200 2x8GB' }, 32: { precio: 140, q: 'memoria RAM DDR4 32GB 3600 2x16GB' } },
-    DDR5: { 16: { precio: 130, q: 'memoria RAM DDR5 16GB 6000' }, 32: { precio: 230, q: 'memoria RAM DDR5 32GB 6000 CL30 2x16GB' } }
+    DDR4: { 16: { precio: 75, q: { es: 'memoria RAM DDR4 16GB 3200 2x8GB', en: 'DDR4 16GB 3200 RAM 2x8GB' } }, 32: { precio: 140, q: { es: 'memoria RAM DDR4 32GB 3600 2x16GB', en: 'DDR4 32GB 3600 RAM 2x16GB' } } },
+    DDR5: { 16: { precio: 130, q: { es: 'memoria RAM DDR5 16GB 6000', en: 'DDR5 16GB 6000 RAM' } }, 32: { precio: 230, q: { es: 'memoria RAM DDR5 32GB 6000 CL30 2x16GB', en: 'DDR5 32GB 6000 CL30 RAM 2x16GB' } } }
   },
-  ssd: { nombre: 'SSD NVMe 1 TB', precio: 90, q: 'SSD NVMe 1TB PCIe 4.0' },
+  ssd: { nombre: 'SSD NVMe 1 TB', precio: 90, q: { es: 'SSD NVMe 1TB PCIe 4.0', en: '1TB NVMe SSD PCIe 4.0' } },
   fuentes: [
     { w: 550, precio: 55 }, { w: 650, precio: 70 }, { w: 750, precio: 90 },
     { w: 850, precio: 115 }, { w: 1000, precio: 160 }, { w: 1200, precio: 230 }
   ],
   cajas: {
-    basica: { nombre: 'Caja ATX básica', precio: 50, q: 'caja PC ATX' },
-    buena: { nombre: 'Caja ATX con buena ventilación', precio: 75, q: 'caja PC ATX airflow' }
+    basica: { nombre: 'Caja ATX básica', precio: 50, q: { es: 'caja PC ATX', en: 'ATX PC case' } },
+    buena: { nombre: 'Caja ATX con buena ventilación', precio: 75, q: { es: 'caja PC ATX airflow', en: 'ATX airflow PC case' } }
   },
   disipadores: {
     incluido: { nombre: 'Incluido con el procesador', precio: 0, q: null },
-    aire: { nombre: 'Disipador por aire de torre', precio: 35, q: 'disipador CPU torre' },
-    liquida: { nombre: 'Refrigeración líquida 360 mm', precio: 90, q: 'refrigeración líquida 360mm' }
+    aire: { nombre: 'Disipador por aire de torre', precio: 35, q: { es: 'disipador CPU torre', en: 'CPU tower air cooler' } },
+    liquida: { nombre: 'Refrigeración líquida 360 mm', precio: 90, q: { es: 'refrigeración líquida 360mm', en: '360mm AIO liquid cooler' } }
   }
 };

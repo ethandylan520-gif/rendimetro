@@ -38,15 +38,33 @@
     return `<p class="note">No tenemos datos concretos de ${quien}: lo estimamos como ${j.perfil}. Tómalo como una referencia aproximada.</p>`;
   }
 
+  // Tienda de Amazon del visitante según su zona horaria (sin cookies ni servicios externos). ?tienda=us la fuerza.
+  const ZONAS_US = /^(America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Juneau|Sitka|Yakutat|Nome|Adak|Metlakatla|Boise|Detroit|Menominee|Puerto_Rico|Indiana\/.+|Kentucky\/.+|North_Dakota\/.+)|Pacific\/Honolulu|US\/.+)$/;
+
+  function paisVisitante() {
+    let zona = '';
+    try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { /* navegador sin Intl */ }
+    return ZONAS_US.test(zona) ? 'us' : null;
+  }
+
+  const tiendas = cfg.tiendas || {};
+  const tienda = tiendas[new URLSearchParams(location.search).get('tienda')]
+    || tiendas[paisVisitante()] || tiendas[cfg.principal] || { dominio: 'www.amazon.es', tag: '', idioma: 'es' };
+
+  // Las búsquedas van en el idioma de la tienda: { es: '...', en: '...' } o un texto suelto.
   function amazonUrl(query) {
-    const url = new URL(`https://${cfg.amazonDominio || 'www.amazon.es'}/s`);
-    url.searchParams.set('k', query);
-    if (cfg.amazonTag) url.searchParams.set('tag', cfg.amazonTag);
+    const k = typeof query === 'string' ? query : query[tienda.idioma] || query.es;
+    const url = new URL(`https://${tienda.dominio}/s`);
+    url.searchParams.set('k', k);
+    if (tienda.tag) url.searchParams.set('tag', tienda.tag);
     return url.toString();
   }
 
+  const qGpu = g => ({ es: `tarjeta gráfica ${g.name}`, en: `${g.name} graphics card` });
+  const qCpu = c => ({ es: `procesador ${c.brand} ${c.name}`, en: `${c.brand} ${c.name} processor` });
+
   function buyLink(item, kind) {
-    const query = kind === 'gpu' ? `tarjeta gráfica ${item.name}` : `procesador ${item.brand} ${item.name}`;
+    const query = kind === 'gpu' ? qGpu(item) : qCpu(item);
     return `<a class="amz amz-${kind}" href="${amazonUrl(query)}" target="_blank" rel="sponsored noopener">Ver ${item.name} en Amazon</a>`;
   }
 
@@ -630,12 +648,12 @@
     const caja = grande ? PIEZAS.cajas.buena : PIEZAS.cajas.basica;
     const disip = PIEZAS.disipadores[c.disipador];
     const partes = [
-      { tipo: 'Gráfica', nombre: g.name, precio: g.precio, q: `tarjeta gráfica ${g.name}` },
-      { tipo: 'Procesador', nombre: c.name, precio: c.precio, q: `procesador ${c.brand} ${c.name}` },
+      { tipo: 'Gráfica', nombre: g.name, precio: g.precio, q: qGpu(g) },
+      { tipo: 'Procesador', nombre: c.name, precio: c.precio, q: qCpu(c) },
       { tipo: 'Placa base', nombre: `${plat.chipset} (${c.socket})`, precio: plat.precio, q: plat.q },
       { tipo: 'Memoria RAM', nombre: `${gb} GB ${plat.ram}`, precio: ram.precio, q: ram.q },
       { tipo: 'Almacenamiento', nombre: PIEZAS.ssd.nombre, precio: PIEZAS.ssd.precio, q: PIEZAS.ssd.q },
-      { tipo: 'Fuente', nombre: `${fuente.w} W 80 Plus Gold`, precio: fuente.precio, q: `fuente alimentación ${fuente.w}W 80 Plus Gold` },
+      { tipo: 'Fuente', nombre: `${fuente.w} W 80 Plus Gold`, precio: fuente.precio, q: { es: `fuente alimentación ${fuente.w}W 80 Plus Gold`, en: `${fuente.w}W 80 Plus Gold power supply` } },
       { tipo: 'Caja', nombre: caja.nombre, precio: caja.precio, q: caja.q },
       { tipo: 'Disipador', nombre: disip.nombre, precio: disip.precio, q: disip.q }
     ];
@@ -653,10 +671,10 @@
 
   function cambios(de, a) {
     const out = [];
-    if (de.g !== a.g) out.push({ html: `Gráfica: ${de.g.name} → <strong>${a.g.name}</strong>`, q: `tarjeta gráfica ${a.g.name}` });
+    if (de.g !== a.g) out.push({ html: `Gráfica: ${de.g.name} → <strong>${a.g.name}</strong>`, q: qGpu(a.g) });
     if (de.c !== a.c) {
       const placa = de.c.socket !== a.c.socket ? ' (con otra placa base)' : '';
-      out.push({ html: `Procesador: ${de.c.name} → <strong>${a.c.name}</strong>${placa}`, q: `procesador ${a.c.brand} ${a.c.name}` });
+      out.push({ html: `Procesador: ${de.c.name} → <strong>${a.c.name}</strong>${placa}`, q: qCpu(a.c) });
     }
     return out;
   }
