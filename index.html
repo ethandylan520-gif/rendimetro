@@ -223,9 +223,61 @@
   .upg-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: auto; }
 
   .gauges { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-  .gauges.trio { grid-template-columns: 1fr .78fr 1fr; align-items: center; }
-  .gauges.trio .gauge:nth-child(2) { padding: 10px 8px; }
-  .gauges.trio .gauge:nth-child(2) svg { max-width: 190px; }
+  /* Compatibilidad: gráfica · rayo · compatibilidad · rayo · procesador */
+  .gauges.trio { position: relative; grid-template-columns: 1fr 44px .78fr 44px 1fr; gap: 0; align-items: center; }
+  .gauges.trio > :nth-child(3) { padding: 10px 8px; }
+  .gauges.trio > :nth-child(3) svg { max-width: 190px; }
+  .rayo { position: relative; height: 4px; margin: 0 5px; border-radius: 4px; background: var(--track); transition: background .3s, box-shadow .3s; }
+  .rayo::after { content: ""; position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; opacity: 0; }
+  .rayo-izq::after { background: var(--gpu); box-shadow: 0 0 12px 3px var(--gpu); }
+  .rayo-der::after { background: var(--cpu); box-shadow: 0 0 12px 3px var(--cpu); }
+  .trio.izq-on .rayo-izq, .trio.cargando .rayo-izq { background: color-mix(in srgb, var(--gpu) 55%, var(--track)); box-shadow: 0 0 8px color-mix(in srgb, var(--gpu) 50%, transparent); }
+  .trio.der-on .rayo-der, .trio.cargando .rayo-der { background: color-mix(in srgb, var(--cpu) 55%, var(--track)); box-shadow: 0 0 8px color-mix(in srgb, var(--cpu) 50%, transparent); }
+  .trio.cargando .rayo-izq::after { animation: viaje-der .5s linear infinite; }
+  .trio.cargando .rayo-der::after { animation: viaje-izq .5s linear infinite; }
+  @keyframes viaje-der { from { left: -6px; opacity: 1; } to { left: calc(100% - 4px); opacity: 1; } }
+  @keyframes viaje-izq { from { right: -6px; opacity: 1; } to { right: calc(100% - 4px); opacity: 1; } }
+  /* Mientras analiza, la rueda del centro va en blanco para no desvelar el resultado */
+  .gauges.trio.cargando > :nth-child(3) { --c: var(--text); animation: escaneo .8s ease-in-out infinite; }
+  .trio.cargando > :nth-child(3) .g-value { stroke: var(--text); }
+  .trio.cargando > :nth-child(3) .needle { fill: var(--text); }
+  @keyframes escaneo { 50% { box-shadow: 0 0 0 2px rgba(255, 255, 255, .25), 0 0 34px -4px rgba(157, 107, 255, .7); } }
+  .trio[data-tono="ok"] { --vc: var(--ok); } .trio[data-tono="warn"] { --vc: var(--warn); }
+  .trio[data-tono="orange"] { --vc: var(--orange); } .trio[data-tono="bad"] { --vc: var(--bad); }
+  .trio.veredicto .rayo { background: var(--vc); box-shadow: 0 0 12px var(--vc); }
+  .trio.veredicto[data-tono="bad"] .rayo { animation: parpadeo .12s steps(2) 6; }
+  @keyframes parpadeo { 50% { opacity: .15; } }
+  /* Sello gigante con el veredicto */
+  .sello-grande {
+    position: absolute; left: 50%; top: 44%; z-index: 5; pointer-events: none; opacity: 0;
+    transform: translate(-50%, -50%) rotate(-8deg); white-space: nowrap;
+    font: 700 clamp(1.05rem, 3vw, 1.9rem) 'Chakra Petch', sans-serif; letter-spacing: 1px;
+    padding: 6px 16px; border: 3px solid currentColor; border-radius: 12px; background: rgba(10, 8, 22, .85);
+    text-shadow: 0 0 18px currentColor; box-shadow: 0 0 34px -6px currentColor, inset 0 0 18px -8px currentColor;
+  }
+  .trio.golpe .sello-grande { animation: golpe 2.3s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+  @keyframes golpe {
+    0% { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(3.2); }
+    13% { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(1); }
+    82% { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(.92); }
+  }
+  .trio.golpe::before {
+    content: ""; position: absolute; inset: -20px; z-index: 4; pointer-events: none; border-radius: 30px;
+    background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--vc) 45%, transparent), transparent 62%);
+    animation: destello .7s ease-out forwards;
+  }
+  @keyframes destello { from { opacity: 1; transform: scale(.7); } to { opacity: 0; transform: scale(1.15); } }
+  .gauges.trio.roto { animation: temblor-trio .5s ease-in-out; }
+  @keyframes temblor-trio { 15%, 55% { transform: translateX(-8px); } 35%, 75% { transform: translateX(8px); } }
+  /* Confeti cuando la pareja es perfecta */
+  .confeti { position: absolute; left: 50%; top: 44%; z-index: 6; pointer-events: none; }
+  .confeti i { position: absolute; width: 8px; height: 13px; border-radius: 2px; background: var(--col); opacity: 0; animation: confeti 1.25s cubic-bezier(.15, .8, .3, 1) var(--d) forwards; }
+  @keyframes confeti {
+    0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 90px)) rotate(var(--r)); }
+  }
   .gauges.four { grid-template-columns: repeat(4, 1fr); }
   .duelos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .duelo { position: relative; }
@@ -545,9 +597,11 @@
     .swap:hover { transform: rotate(270deg); }
     .res-list { grid-template-columns: 1fr; }
     .gauges, .gauges.four { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .gauges.trio { grid-template-columns: 1fr 1.08fr 1fr; gap: 6px; }
+    .gauges.trio { grid-template-columns: 1fr 14px 1.08fr 14px 1fr; gap: 0; }
+    .rayo { margin: 0 2px; height: 3px; }
+    .rayo::after { width: 7px; height: 7px; margin-top: -3.5px; }
     .gauges.trio .gauge { padding: 8px 4px 10px; }
-    .gauges.trio .gauge:nth-child(2) svg { max-width: 84%; }
+    .gauges.trio > :nth-child(3) svg { max-width: 84%; }
     .gauges.trio .tk-label { display: none; }
     .gauges.trio .g-label { white-space: normal; overflow: visible; font-size: .7rem; line-height: 1.2; }
     .duelos { gap: 10px; }
@@ -751,8 +805,8 @@
   </div>
 </footer>
 
-<script src="js/config.js?v=202610012225"></script>
-<script src="js/data.js?v=202610012225"></script>
-<script src="js/app.js?v=202610012225"></script>
+<script src="js/config.js?v=202610012232"></script>
+<script src="js/data.js?v=202610012232"></script>
+<script src="js/app.js?v=202610012232"></script>
 </body>
 </html>

@@ -90,7 +90,7 @@
   }
 
   // hot: valor de gama alta (brilla y la aguja tiembla al llegar). badge: etiqueta como "GANA". delay: retraso del arranque en ms.
-  function gauge({ value, scale, label, sub = '', unit, color, read, zonas, hot, badge, delay, key }) {
+  function gauge({ value, scale, label, sub = '', unit, color, read, zonas, hot, badge, delay, key, suspense }) {
     const [max, pasos] = scale;
     const t = Math.max(0, Math.min(1, value / max));
     const ang = G_START + G_SWEEP * t;
@@ -125,7 +125,7 @@
     }
 
     const fx = hot ? ' hot' : color === 'bad' ? ' alerta' : '';
-    return `<figure class="gauge k-${color}${fx}${badge ? ' win' : ''}" data-t="${t.toFixed(4)}" data-n="${n}"${delay != null ? ` data-delay="${delay}"` : ''}${key ? ` data-key="${key}"` : ''}>
+    return `<figure class="gauge k-${color}${fx}${badge ? ' win' : ''}" data-t="${t.toFixed(4)}" data-n="${n}"${delay != null ? ` data-delay="${delay}"` : ''}${key ? ` data-key="${key}"` : ''}${suspense ? ' data-suspense="1"' : ''}>
       <svg viewBox="0 0 200 162" role="img" aria-label="${label}: ${n} ${unit}">
         ${bandas}
         <path d="${arco(80, G_START, G_START + G_SWEEP)}" class="g-track"/>
@@ -193,17 +193,21 @@
     marcas.forEach(([el, k]) => el.classList.toggle('on', k <= tc + 0.001));
   }
 
+  // Avisa de que la aguja ha llegado a su valor (la compatibilidad lo usa para la revelación).
+  // inmediato: no ha habido animación, así que no toca hacer efectos.
+  const avisarLlegada = (fig, inmediato) => fig.dispatchEvent(new CustomEvent('aterriza', { bubbles: true, detail: { inmediato } }));
+
   function moverAguja(fig, key, como, orden) {
     const t1 = Number(fig.dataset.t), n1 = Number(fig.dataset.n);
     const antes = agujas.get(key);
     if (antes) { cancelAnimationFrame(antes.raf); clearTimeout(antes.seguro); }
     const estado = { t: t1, n: n1, raf: 0, seguro: 0 };
     agujas.set(key, estado);
-    if (sinMovimiento.matches || como === 'quieto') return;
+    if (sinMovimiento.matches || como === 'quieto') { avisarLlegada(fig, true); return; }
 
     const arranque = como === 'arranque' || !antes;
     const t0 = arranque ? 0 : antes.t, n0 = arranque ? 0 : antes.n;
-    if (!arranque && Math.abs(t0 - t1) < 0.002 && Math.round(n0) === n1) return;
+    if (!arranque && Math.abs(t0 - t1) < 0.002 && Math.round(n0) === n1) { avisarLlegada(fig, true); return; }
     const efectos = como !== 'arrastre';
     if (efectos) {
       fig.classList.remove('landed');
@@ -212,12 +216,13 @@
     const pintar = (t, n) => { ponerAguja(fig, t, n); estado.t = t; estado.n = n; };
     pintar(t0, n0);
 
+    // suspense: la aguja tiembla y los números bailan como una tragaperras antes de revelar el valor.
+    const suspense = fig.dataset.suspense && efectos ? (arranque ? 1200 : 750) : 0;
     const retraso = arranque ? (fig.dataset.delay ? Number(fig.dataset.delay) : orden * 140) : orden * 50;
-    const subida = arranque ? 520 : 0, pausa = arranque ? 80 : 0, asentar = arranque ? 1000 : 850;
+    const subida = arranque && !suspense ? 520 : 0, pausa = subida ? 80 : 0, asentar = arranque ? 1000 : 850;
     // En el arranque la aguja sube hasta el final de la escala y luego cae a su valor (con un pequeño rebote).
-    const tope = t1 > 0 ? n1 / t1 : 0;
-    const ta = arranque ? 1 : t0, na = arranque ? tope : n0;
-    let inicio = null, llegado = false;
+    const tope = t1 > 0 ? n1 / t1 : 100;
+    let inicio = null, llegado = false, base = null;
     const paso = ahora => {
       inicio ??= ahora;
       const ms = ahora - inicio - retraso;
@@ -227,13 +232,19 @@
           pintar(k, tope * k);
         } else if (ms < subida + pausa) {
           pintar(1, tope);
+        } else if (ms < subida + pausa + suspense) {
+          const s = ms - subida - pausa;
+          const azar = Math.abs(Math.sin(Math.floor(s / 55) * 12.9898) * 43758.5453) % 1;
+          pintar(0.5 + 0.4 * Math.sin(s / 65) * Math.cos(s / 210), azar * tope);
         } else {
-          const p = Math.min(1, (ms - subida - pausa) / asentar);
+          base ??= { t: estado.t, n: estado.n };
+          const p = Math.min(1, (ms - subida - pausa - suspense) / asentar);
           const k = rebote(p);
-          pintar(ta + (t1 - ta) * k, na + (n1 - na) * k);
+          pintar(base.t + (t1 - base.t) * k, base.n + (n1 - base.n) * k);
           if (!llegado && p >= 0.17) {
             llegado = true;
             if (efectos) reiniciarClase(fig, 'landed');
+            avisarLlegada(fig, false);
           }
           if (p >= 1) { pintar(t1, n1); clearTimeout(estado.seguro); return; }
         }
@@ -245,8 +256,8 @@
     estado.seguro = setTimeout(() => {
       cancelAnimationFrame(estado.raf);
       pintar(t1, n1);
-      if (!llegado) fig.classList.remove('anim');
-    }, retraso + subida + pausa + asentar + 500);
+      if (!llegado) { fig.classList.remove('anim'); avisarLlegada(fig, true); }
+    }, retraso + subida + pausa + suspense + asentar + 500);
   }
 
   // Números que cuentan hasta su valor (porcentajes, precio total).
@@ -519,7 +530,7 @@
         : gaugeVacio('Elige tu procesador');
       mostrar($('bnResult'), `
         <p class="headline vacio-hint">${g || c ? `Ahora elige tu ${g ? 'procesador' : 'gráfica'}…` : 'Elige tu gráfica y tu procesador para ver si se llevan bien'}</p>
-        <div class="gauges trio">${potGpu}${gaugeVacio('Compatibilidad')}${potCpu}</div>`);
+        <div class="gauges trio${g ? ' izq-on' : ''}${c ? ' der-on' : ''}">${potGpu}<span class="rayo rayo-izq" aria-hidden="true"></span>${gaugeVacio('Compatibilidad')}<span class="rayo rayo-der" aria-hidden="true"></span>${potCpu}</div>`);
       return;
     }
     const res = RES[r].label;
@@ -585,12 +596,17 @@
     const [compatTono, compatNota] = puntos >= 90 ? ['ok', 'Excelente'] : puntos >= 75 ? ['warn', 'Buena'] : puntos >= 60 ? ['orange', 'Mejorable'] : ['bad', 'Mala'];
     const compatHtml = `<ul class="compat">${compat.map((x, i) => `<li class="${x.ok ? 'cp-si' : 'cp-aviso'}" style="--k:${i}">${x.txt}</li>`).join('')}</ul>`;
 
-    // Primero arrancan la gráfica y el procesador; la compatibilidad, en el centro, llega la última.
+    // Primero arrancan la gráfica y el procesador; los rayos las "conectan", la rueda del centro analiza con suspense
+    // y al final cae el sello con el veredicto (con confeti si es perfecta, temblor si no pegan).
+    const SELLO = { ok: '¡PAREJA PERFECTA!', warn: '¡BUENA PAREJA!', orange: 'PAREJA MEJORABLE', bad: '¡NO PEGAN!' };
     mostrar($('bnResult'), `
-      <div class="gauges trio">
+      <div class="gauges trio cargando" data-tono="${compatTono}">
         ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, delay: 0, key: 'gpu' })}
-        ${gauge({ value: puntos, scale: [100, 5], label: 'Compatibilidad', sub: `<b class="t-${compatTono}">${compatNota}</b>`, unit: '%', color: compatTono, hot: puntos >= 95, delay: 650, key: 'compat' })}
+        <span class="rayo rayo-izq" aria-hidden="true"></span>
+        ${gauge({ value: puntos, scale: [100, 5], label: 'Compatibilidad', sub: `<b class="t-${compatTono}">${compatNota}</b>`, unit: '%', color: compatTono, hot: puntos >= 95, delay: 550, key: 'compat', suspense: true })}
+        <span class="rayo rayo-der" aria-hidden="true"></span>
         ${gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, delay: 180, key: 'cpu' })}
+        <span class="sello-grande t-${compatTono}" aria-hidden="true">${SELLO[compatTono]}</span>
       </div>
       <h3 class="bars-title">Compatibilidad</h3>
       ${compatHtml}
@@ -1248,6 +1264,32 @@
     $(b.dataset.sel).dispatchEvent(new Event('change'));
     history.replaceState(null, '', `#${b.dataset.tab}`);
     openTab(b.dataset.tab, true);
+  });
+
+  // ---------- Revelación de la compatibilidad ----------
+  function confeti(cont) {
+    const colores = ['var(--gpu)', 'var(--cpu)', 'var(--ok)', 'var(--warn)', 'var(--info)'];
+    const caja = document.createElement('span');
+    caja.className = 'confeti';
+    caja.setAttribute('aria-hidden', 'true');
+    caja.innerHTML = Array.from({ length: 30 }, (_, i) => {
+      const ang = Math.random() * Math.PI * 2, dist = 70 + Math.random() * 150;
+      return `<i style="--dx:${fix(Math.cos(ang) * dist)}px;--dy:${fix(Math.sin(ang) * dist - 50)}px;--r:${Math.round(Math.random() * 720 - 360)}deg;--col:${colores[i % colores.length]};--d:${Math.round(Math.random() * 120)}ms"></i>`;
+    }).join('');
+    cont.appendChild(caja);
+    setTimeout(() => caja.remove(), 1700);
+  }
+
+  $('bnResult').addEventListener('aterriza', e => {
+    const fig = e.target;
+    if (fig.dataset.key !== 'compat') return;
+    const trio = fig.closest('.trio');
+    trio.classList.remove('cargando');
+    trio.classList.add('veredicto');
+    if (e.detail.inmediato || sinMovimiento.matches) return;
+    reiniciarClase(trio, 'golpe');
+    if (trio.dataset.tono === 'ok') confeti(trio);
+    if (trio.dataset.tono === 'bad') reiniciarClase(trio, 'roto');
   });
 
   // ---------- Pestañas ----------
