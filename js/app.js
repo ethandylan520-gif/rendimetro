@@ -704,7 +704,8 @@
       return;
     }
     const res = RES[r].label;
-    const grande = presupuesto >= 900;
+    // Con la RAM tan cara (32 GB DDR5 ≈ 475 €), los 32 GB y la caja mejor solo compensan en presupuestos altos.
+    const grande = presupuesto >= 1800;
     const lista = [];
     for (const g of GPUS) {
       if (!g.buy) continue;
@@ -819,7 +820,7 @@
       </div>
       ${notas}
       ${bloqueMejoras}
-      <p class="aff-note">Precios orientativos del mercado español (septiembre 2026): el precio real puede variar, consúltalo en Amazon. No incluye monitor, periféricos ni sistema operativo. FPS estimados sin DLSS/FSR.</p>
+      <p class="aff-note">Precios orientativos del mercado español, revisados el 1 de octubre de 2026: el precio real puede variar, consúltalo en Amazon. No incluye monitor, periféricos ni sistema operativo. FPS estimados sin DLSS/FSR.</p>
       ${affNote}`);
   }
 
@@ -1065,7 +1066,7 @@
     cpuA: 'r7600', cpuB: 'i514400f',
     bnGpu: 'rtx5070', bnCpu: 'r5600', bnRes: '1440',
     fpsGpu: 'rtx4060', fpsCpu: 'r5600', fpsGame: 'cyberpunk', fpsRes: '1080',
-    pcGame: 'cyberpunk', pcRes: '1440', pcCal: 'alta', pcBudget: '1000', pcRange: '1000'
+    pcGame: 'cyberpunk', pcRes: '1440', pcCal: 'alta', pcBudget: '1200', pcRange: '1200'
   };
   Object.entries(defaults).forEach(([id, v]) => { $(id).value = v; });
   initCombo('fps');
