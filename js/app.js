@@ -71,22 +71,25 @@
     return `M ${fix(x1)} ${fix(y1)} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${fix(x2)} ${fix(y2)}`;
   }
 
-  function gauge({ value, scale, label, sub = '', unit, color, read, zonas }) {
+  // hot: valor de gama alta (brilla y la aguja tiembla al llegar). badge: etiqueta como "GANA". delay: retraso del arranque en ms.
+  function gauge({ value, scale, label, sub = '', unit, color, read, zonas, hot, badge, delay }) {
     const [max, pasos] = scale;
     const t = Math.max(0, Math.min(1, value / max));
     const ang = G_START + G_SWEEP * t;
     const toAng = v => G_START + G_SWEEP * Math.min(1, v / max);
+    const n = read ?? Math.round(value);
 
     let marcas = '';
     const total = pasos * 4;
     for (let i = 0; i <= total; i++) {
-      const deg = G_START + G_SWEEP * i / total;
+      const k = i / total;
+      const deg = G_START + G_SWEEP * k;
       const mayor = i % 4 === 0;
       const [x1, y1] = polar(mayor ? 60 : 64, deg), [x2, y2] = polar(70, deg);
-      marcas += `<line x1="${fix(x1)}" y1="${fix(y1)}" x2="${fix(x2)}" y2="${fix(y2)}" class="${mayor ? 'tk-major' : 'tk'}"/>`;
+      marcas += `<line x1="${fix(x1)}" y1="${fix(y1)}" x2="${fix(x2)}" y2="${fix(y2)}" data-k="${fix(k)}" class="${mayor ? 'tk-major' : 'tk'}${k <= t ? ' on' : ''}"/>`;
       if (mayor) {
         const [lx, ly] = polar(49, deg);
-        marcas += `<text x="${fix(lx)}" y="${fix(ly)}" class="tk-label">${Math.round(max * i / total)}</text>`;
+        marcas += `<text x="${fix(lx)}" y="${fix(ly)}" class="tk-label">${Math.round(max * k)}</text>`;
       }
     }
 
@@ -95,23 +98,204 @@
       .map(([desde, hasta, cls]) => `<path d="${arco(89, toAng(desde), toAng(Math.min(hasta, max)))}" class="g-zone z-${cls}"/>`)
       .join('');
 
-    const lleno = t > 0.005
-      ? `<path d="${arco(80, G_START, G_START + G_SWEEP)}" pathLength="100" class="g-value c-${color}" style="stroke-dasharray:${fix(t * 100)} 100"/>`
-      : '';
+    // Chispas que saltan en el punto donde se para la aguja.
+    const [bx, by] = polar(80, ang);
+    let rayos = '';
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      rayos += `<line x1="${fix(7 * Math.cos(a))}" y1="${fix(7 * Math.sin(a))}" x2="${fix(14 * Math.cos(a))}" y2="${fix(14 * Math.sin(a))}"/>`;
+    }
 
-    return `<figure class="gauge">
-      <svg viewBox="0 0 200 162" role="img" aria-label="${label}: ${read ?? Math.round(value)} ${unit}">
+    const fx = hot ? ' hot' : color === 'bad' ? ' alerta' : '';
+    return `<figure class="gauge k-${color}${fx}${badge ? ' win' : ''}" data-t="${t.toFixed(4)}" data-n="${n}"${delay != null ? ` data-delay="${delay}"` : ''}>
+      <svg viewBox="0 0 200 162" role="img" aria-label="${label}: ${n} ${unit}">
         ${bandas}
         <path d="${arco(80, G_START, G_START + G_SWEEP)}" class="g-track"/>
-        ${lleno}
+        <path d="${arco(80, G_START, G_START + G_SWEEP)}" pathLength="100" class="g-value c-${color}" style="stroke-dasharray:${fix(t * 100)} 100${t > 0.005 ? '' : ';visibility:hidden'}"/>
         ${marcas}
-        <polygon points="96.5,100 103.5,100 100,26" class="needle n-${color}" style="transform:rotate(${fix(ang)}deg)"/>
+        <g transform="translate(${fix(bx)} ${fix(by)})"><g class="g-burst">${rayos}</g></g>
+        <g class="needle-shake"><polygon points="96.5,100 103.5,100 100,26" class="needle n-${color}" style="transform:rotate(${fix(ang)}deg)"/></g>
         <circle cx="100" cy="100" r="7" class="hub"/>
-        <text x="100" y="141" class="g-read">${read ?? Math.round(value)}</text>
+        <text x="100" y="141" class="g-read">${n}</text>
         <text x="100" y="155" class="g-unit">${unit}</text>
       </svg>
+      ${badge ? `<span class="g-badge">${badge}</span>` : ''}
       <figcaption><span class="g-label">${label}</span>${sub ? `<span class="g-sub">${sub}</span>` : ''}</figcaption>
     </figure>`;
+  }
+
+  // ---------- Animaciones ----------
+  // Cada aguja recuerda dónde se quedó: al cambiar una pieza se mueve desde ahí hasta el valor nuevo.
+  // Al abrir una pestaña, o al llegar a los resultados haciendo scroll, hace el barrido de arranque de un coche.
+  const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)');
+  const agujas = new Map(), cuentas = new Map(), esperando = new Map();
+  const rebote = p => 1 - Math.exp(-6.5 * p) * Math.cos(9.5 * p);
+  const suave = p => (p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2);
+  const frenar = p => 1 - (1 - p) ** 3;
+  // quieto: sin animar (pestañas ocultas al cargar). cambio: el usuario cambia una opción. arrastre: barra del presupuesto.
+  let modo = 'quieto';
+
+  function reiniciarClase(el, cls) {
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+
+  function ponerAguja(fig, t, n) {
+    fig._p ??= {
+      needle: fig.querySelector('.needle'), arc: fig.querySelector('.g-value'), read: fig.querySelector('.g-read'),
+      marcas: [...fig.querySelectorAll('[data-k]')].map(el => [el, Number(el.dataset.k)])
+    };
+    const { needle, arc, read, marcas } = fig._p;
+    const tc = Math.max(0, Math.min(1, t));
+    needle.style.transform = `rotate(${fix(G_START + G_SWEEP * Math.max(-0.015, Math.min(1.02, t)))}deg)`;
+    arc.style.strokeDasharray = `${fix(tc * 100)} 100`;
+    arc.style.visibility = tc > 0.005 ? 'visible' : 'hidden';
+    read.textContent = Math.max(0, Math.round(n));
+    marcas.forEach(([el, k]) => el.classList.toggle('on', k <= tc + 0.001));
+  }
+
+  function moverAguja(fig, key, como, orden) {
+    const t1 = Number(fig.dataset.t), n1 = Number(fig.dataset.n);
+    const antes = agujas.get(key);
+    if (antes) { cancelAnimationFrame(antes.raf); clearTimeout(antes.seguro); }
+    const estado = { t: t1, n: n1, raf: 0, seguro: 0 };
+    agujas.set(key, estado);
+    if (sinMovimiento.matches || como === 'quieto') return;
+
+    const arranque = como === 'arranque' || !antes;
+    const t0 = arranque ? 0 : antes.t, n0 = arranque ? 0 : antes.n;
+    if (!arranque && Math.abs(t0 - t1) < 0.002 && Math.round(n0) === n1) return;
+    const efectos = como !== 'arrastre';
+    if (efectos) {
+      fig.classList.remove('landed');
+      fig.classList.add('anim');
+    }
+    const pintar = (t, n) => { ponerAguja(fig, t, n); estado.t = t; estado.n = n; };
+    pintar(t0, n0);
+
+    const retraso = arranque ? (fig.dataset.delay ? Number(fig.dataset.delay) : orden * 140) : orden * 50;
+    const subida = arranque ? 520 : 0, pausa = arranque ? 80 : 0, asentar = arranque ? 1000 : 850;
+    // En el arranque la aguja sube hasta el final de la escala y luego cae a su valor (con un pequeño rebote).
+    const tope = t1 > 0 ? n1 / t1 : 0;
+    const ta = arranque ? 1 : t0, na = arranque ? tope : n0;
+    let inicio = null, llegado = false;
+    const paso = ahora => {
+      inicio ??= ahora;
+      const ms = ahora - inicio - retraso;
+      if (ms >= 0) {
+        if (ms < subida) {
+          const k = suave(ms / subida);
+          pintar(k, tope * k);
+        } else if (ms < subida + pausa) {
+          pintar(1, tope);
+        } else {
+          const p = Math.min(1, (ms - subida - pausa) / asentar);
+          const k = rebote(p);
+          pintar(ta + (t1 - ta) * k, na + (n1 - na) * k);
+          if (!llegado && p >= 0.17) {
+            llegado = true;
+            if (efectos) reiniciarClase(fig, 'landed');
+          }
+          if (p >= 1) { pintar(t1, n1); clearTimeout(estado.seguro); return; }
+        }
+      }
+      estado.raf = requestAnimationFrame(paso);
+    };
+    estado.raf = requestAnimationFrame(paso);
+    // Si el navegador pausa la animación (pestaña en segundo plano), que al menos quede el valor correcto.
+    estado.seguro = setTimeout(() => {
+      cancelAnimationFrame(estado.raf);
+      pintar(t1, n1);
+      if (!llegado) fig.classList.remove('anim');
+    }, retraso + subida + pausa + asentar + 500);
+  }
+
+  // Números que cuentan hasta su valor (porcentajes, precio total).
+  function contar(root, como) {
+    root.querySelectorAll('[data-cuenta]').forEach((el, i) => {
+      const key = `${root.id}#${i}`;
+      const fin = Number(el.dataset.cuenta);
+      const desde = como === 'arranque' ? 0 : cuentas.get(key) ?? fin;
+      cuentas.set(key, fin);
+      if (sinMovimiento.matches || como === 'quieto' || desde === fin) return;
+      const fmt = el.dataset.fmt === 'eur' ? eur : v => String(Math.round(v));
+      const dur = como === 'arranque' ? 1200 : como === 'arrastre' ? 300 : 650;
+      const retraso = como === 'arranque' ? 300 : 0;
+      let inicio = null, raf = 0;
+      el.textContent = fmt(desde);
+      const seguro = setTimeout(() => { cancelAnimationFrame(raf); el.textContent = fmt(fin); }, retraso + dur + 500);
+      const paso = ahora => {
+        inicio ??= ahora;
+        const p = Math.max(0, Math.min(1, (ahora - inicio - retraso) / dur));
+        el.textContent = fmt(desde + (fin - desde) * frenar(p));
+        if (p < 1) raf = requestAnimationFrame(paso);
+        else clearTimeout(seguro);
+      };
+      raf = requestAnimationFrame(paso);
+    });
+  }
+
+  function ejecutar(el, como) {
+    const previa = esperando.get(el);
+    if (previa) { vigia.unobserve(previa); esperando.delete(el); }
+    el.classList.remove('reveal', 'reveal-suave');
+    if (como === 'arranque' || como === 'cambio') {
+      [...el.children].forEach((c, i) => c.style.setProperty('--i', i));
+      reiniciarClase(el, como === 'arranque' ? 'reveal' : 'reveal-suave');
+    }
+    el.querySelectorAll('.gauge').forEach((fig, i) => {
+      fig.style.setProperty('--g', i);
+      moverAguja(fig, `${el.id}:${i}`, como, i);
+    });
+    contar(el, como);
+    if (como === 'quieto') return;
+    // Que los lectores de pantalla no lean los números mientras cuentan.
+    el.setAttribute('aria-busy', 'true');
+    clearTimeout(el._ocupado);
+    el._ocupado = setTimeout(() => el.removeAttribute('aria-busy'), 2300);
+  }
+
+  const vigia = new IntersectionObserver(entradas => {
+    entradas.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target.closest('.result');
+      if (esperando.get(el) === e.target) ejecutar(el, 'arranque');
+      else vigia.unobserve(e.target);
+    });
+  }, { threshold: 0.35 });
+
+  function aLaVista(fig) {
+    const r = fig.getBoundingClientRect();
+    return r.height > 0 && r.bottom > 70 && r.top < innerHeight - Math.min(r.height * 0.35, 120);
+  }
+
+  function animar(el, como) {
+    const primera = el.querySelector('.gauge');
+    if (sinMovimiento.matches || como === 'quieto' || !primera || aLaVista(primera)) {
+      ejecutar(el, como);
+      return;
+    }
+    // Fuera de pantalla: dejamos las agujas a cero y arrancan cuando el usuario llega hasta ellas.
+    const previa = esperando.get(el);
+    if (previa) vigia.unobserve(previa);
+    el.querySelectorAll('.gauge').forEach((fig, i) => {
+      const key = `${el.id}:${i}`;
+      cancelAnimationFrame(agujas.get(key)?.raf);
+      clearTimeout(agujas.get(key)?.seguro);
+      agujas.set(key, { t: 0, n: 0, raf: 0, seguro: 0 });
+      fig.classList.remove('landed');
+      fig.classList.add('anim');
+      ponerAguja(fig, 0, 0);
+    });
+    el.querySelectorAll('[data-cuenta]').forEach(c => { c.textContent = c.dataset.fmt === 'eur' ? eur(0) : '0'; });
+    esperando.set(el, primera);
+    vigia.observe(primera);
+  }
+
+  function mostrar(el, html) {
+    el.innerHTML = html;
+    animar(el, modo);
   }
 
   function fillHardware(select, items, key) {
@@ -145,23 +329,25 @@
   // ---------- Gráfica vs gráfica ----------
   function renderGpu() {
     const a = GPU[$('gpuA').value], b = GPU[$('gpuB').value];
-    let head;
+    let head, gana = null;
     if (a === b) {
       head = 'Has elegido la misma gráfica en los dos lados.';
     } else {
       const [w, l] = a.idx >= b.idx ? [a, b] : [b, a];
       const d = diff(w.idx, l.idx);
+      if (d >= 3) gana = w;
       head = d < 3
         ? `<strong>${a.name}</strong> y <strong>${b.name}</strong> rinden prácticamente igual.`
-        : `<strong>${w.name}</strong> rinde un <strong class="hl-gpu">${d}% más</strong> que ${l.name}.`;
+        : `<strong>${w.name}</strong> rinde un <strong class="hl-gpu"><span data-cuenta="${d}">${d}</span>% más</strong> que ${l.name}.`;
     }
     const scale = escala(Math.max(a.idx, b.idx) * 1.08, ESC_PTS);
     const eff = g => Math.round(g.idx / g.tdp * 1000) / 10;
-    $('gpuResult').innerHTML = `
+    mostrar($('gpuResult'), `
       <p class="headline">${head}</p>
-      <div class="gauges">
-        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu' })}
-        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b' })}
+      <div class="gauges duelo">
+        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu', hot: a.idx >= 95, badge: gana === a ? 'GANA' : '' })}
+        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b', hot: b.idx >= 95, badge: gana === b ? 'GANA' : '' })}
+        <span class="vs" aria-hidden="true">VS</span>
       </div>
       <div class="table-wrap"><table class="specs">
         <thead><tr><th></th><th>${a.name}</th><th>${b.name}</th></tr></thead>
@@ -174,40 +360,49 @@
         </tbody>
       </table></div>
       <div class="buy">${buyLink(a, 'gpu')}${a !== b ? buyLink(b, 'gpu') : ''}</div>
-      ${affNote}`;
+      ${affNote}`);
   }
 
   // ---------- Procesador vs procesador ----------
   function renderCpu() {
     const a = CPU[$('cpuA').value], b = CPU[$('cpuB').value];
-    let head, sub = '';
+    let head, sub = '', ganaJ = null, ganaM = null;
     if (a === b) {
       head = 'Has elegido el mismo procesador en los dos lados.';
     } else {
       const [w, l] = a.game >= b.game ? [a, b] : [b, a];
       const d = diff(w.game, l.game);
+      if (d >= 3) ganaJ = w;
       head = d < 3
         ? `En juegos, <strong>${a.name}</strong> y <strong>${b.name}</strong> rinden prácticamente igual.`
-        : `En juegos, <strong>${w.name}</strong> rinde un <strong class="hl-cpu">${d}% más</strong> que ${l.name}.`;
+        : `En juegos, <strong>${w.name}</strong> rinde un <strong class="hl-cpu"><span data-cuenta="${d}">${d}</span>% más</strong> que ${l.name}.`;
       const [mw, ml] = a.multi >= b.multi ? [a, b] : [b, a];
       const dm = diff(mw.multi, ml.multi);
+      if (dm >= 3) ganaM = mw;
       sub = dm < 3
         ? 'En tareas multinúcleo (edición de vídeo, streaming, renderizado) van a la par.'
-        : `En tareas multinúcleo (edición de vídeo, streaming, renderizado) gana el ${mw.name} por un ${dm}%.`;
+        : `En tareas multinúcleo (edición de vídeo, streaming, renderizado) gana el ${mw.name} por un <span data-cuenta="${dm}">${dm}</span>%.`;
     }
     const scaleG = escala(Math.max(a.game, b.game) * 1.08, ESC_PTS);
     const scaleM = escala(Math.max(a.multi, b.multi) * 1.08, ESC_PTS);
     const plataforma = a.socket === b.socket
       ? `<p class="note">Los dos usan la plataforma ${a.socket}: puedes cambiar uno por otro sin cambiar de placa base (a veces hace falta actualizar la BIOS).</p>`
       : '';
-    $('cpuResult').innerHTML = `
+    const badgeJ = x => (ganaJ === x ? 'GANA' : ''), badgeM = x => (ganaM === x ? 'GANA' : '');
+    mostrar($('cpuResult'), `
       <p class="headline">${head}</p>
       ${sub ? `<p class="subline">${sub}</p>` : ''}
-      <div class="gauges four">
-        ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu' })}
-        ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b' })}
-        ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu' })}
-        ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu-b' })}
+      <div class="duelos">
+        <div class="gauges duelo">
+          ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu', hot: a.game >= 88, badge: badgeJ(a) })}
+          ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b', hot: b.game >= 88, badge: badgeJ(b) })}
+          <span class="vs" aria-hidden="true">VS</span>
+        </div>
+        <div class="gauges duelo">
+          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a) })}
+          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Multinúcleo', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b) })}
+          <span class="vs" aria-hidden="true">VS</span>
+        </div>
       </div>
       <div class="table-wrap"><table class="specs cpu-specs">
         <thead><tr><th></th><th>${a.name}</th><th>${b.name}</th></tr></thead>
@@ -219,7 +414,7 @@
       </table></div>
       ${plataforma}
       <div class="buy">${buyLink(a, 'cpu')}${a !== b ? buyLink(b, 'cpu') : ''}</div>
-      ${affNote}`;
+      ${affNote}`);
   }
 
   // ---------- Cuello de botella ----------
@@ -253,7 +448,7 @@
       if (bn > 30) { tone = 'bad'; title = 'Cuello de botella fuerte'; }
       else if (bn > 15) { tone = 'orange'; title = 'Cuello de botella notable'; }
       else { tone = 'warn'; title = 'Cuello de botella leve'; }
-      text = `En ${res}, el ${c.name} solo puede aprovechar en torno al <strong>${Math.round(feed * 100)}%</strong> de la ${g.name}. Lo notarás sobre todo en juegos competitivos y cuando buscas muchos FPS.`;
+      text = `En ${res}, el ${c.name} solo puede aprovechar en torno al <strong><span data-cuenta="${Math.round(feed * 100)}">${Math.round(feed * 100)}</span>%</strong> de la ${g.name}. Lo notarás sobre todo en juegos competitivos y cuando buscas muchos FPS.`;
       const rec = recomendarCpu(need, c);
       if (rec) {
         const plat = rec.socket === c.socket
@@ -284,38 +479,46 @@
       text = `El ${c.name} aprovecha bien la ${g.name} en ${res}. Ninguno de los dos frena al otro de forma notable.`;
     }
 
-    const porRes = Object.keys(RES).map(k => {
+    const porRes = Object.keys(RES).map((k, i) => {
       const x = cuello(g, c, k).bn;
       const cls = x > 30 ? 'bad' : x > 15 ? 'orange' : x > 5 ? 'warn' : 'ok';
-      return `<li><span>${RES[k].label}</span><strong class="t-${cls}">${x > 5 ? `Limita un ${Math.round(x)}%` : 'Sin cuello de botella'}</strong></li>`;
+      return `<li style="--k:${i}"><span>${RES[k].label}</span><strong class="t-${cls}">${x > 5 ? `Limita un ${Math.round(x)}%` : 'Sin cuello de botella'}</strong></li>`;
     }).join('');
 
+    // Puntuación de compatibilidad: lo que el procesador aprovecha de la gráfica, menos lo que se pierde por PCIe o Resizable BAR.
+    let puntos = feed * 100;
     const compat = [{ ok: true, txt: `Encajan: la ${g.name} va en cualquier placa con ranura PCIe x16, así que puedes montarla con el ${c.name}.` }];
     if (g.x8 && c.pcie3) {
+      puntos -= 8;
       compat.push({ ok: false, txt: `La ${g.name} usa solo 8 líneas PCIe y el ${c.name} va con PCIe 3.0: perderá algo de rendimiento, sobre todo cuando se quede sin VRAM.` });
     }
     if (g.brand === 'Intel' && (c.socket === 'LGA1151' || c.id === 'r2600')) {
+      puntos -= 20;
       compat.push({ ok: false, txt: `Las Intel Arc necesitan Resizable BAR para rendir bien y con el ${c.name} lo más probable es que tu placa no lo tenga. Sin él rinden bastante peor.` });
     } else if (g.brand === 'Intel' && c.game < 65) {
+      puntos -= 8;
       compat.push({ ok: false, txt: `Las Intel Arc pierden algo de rendimiento con procesadores modestos como el ${c.name} por la carga extra de su driver.` });
     }
-    const compatHtml = `<ul class="compat">${compat.map(x => `<li class="${x.ok ? 'cp-si' : 'cp-aviso'}">${x.txt}</li>`).join('')}</ul>`;
+    puntos = Math.max(0, Math.round(puntos));
+    const [compatTono, compatNota] = puntos >= 90 ? ['ok', 'Excelente'] : puntos >= 75 ? ['warn', 'Buena'] : puntos >= 60 ? ['orange', 'Mejorable'] : ['bad', 'Mala'];
+    const compatHtml = `<ul class="compat">${compat.map((x, i) => `<li class="${x.ok ? 'cp-si' : 'cp-aviso'}" style="--k:${i}">${x.txt}</li>`).join('')}</ul>`;
 
-    $('bnResult').innerHTML = `
+    // Primero arrancan la gráfica y el procesador; la compatibilidad, en el centro, llega la última.
+    mostrar($('bnResult'), `
+      <div class="gauges trio">
+        ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, delay: 0 })}
+        ${gauge({ value: puntos, scale: [100, 5], label: 'Compatibilidad', sub: `<b class="t-${compatTono}">${compatNota}</b>`, unit: '%', color: compatTono, hot: puntos >= 95, delay: 650 })}
+        ${gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, delay: 180 })}
+      </div>
       <h3 class="bars-title">Compatibilidad</h3>
       ${compatHtml}
       <h3 class="bars-title">Equilibrio (cuello de botella)</h3>
       <div class="verdict v-${tone}"><span class="verdict-title">${title}</span><p>${text}</p></div>
-      <div class="gauges three">
-        ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu' })}
-        ${gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu' })}
-        ${gauge({ value: feed * 100, scale: [100, 5], label: 'Aprovechamiento', sub: 'de la gráfica', unit: '%', color: tone })}
-      </div>
       <h3 class="bars-title">Según la resolución</h3>
       <ul class="res-list">${porRes}</ul>
       <p class="note">A más resolución, más trabaja la gráfica y menos importa el procesador.</p>
       ${extra}
-      ${extra.includes('class="rec') ? affNote : ''}`;
+      ${extra.includes('class="rec') ? affNote : ''}`);
   }
 
   // ---------- FPS por juego ----------
@@ -353,7 +556,7 @@
       return gauge({
         value: x.fps, scale, label: `Calidad ${x.p.label}`,
         sub: `<b class="t-${t.cls}">${t.label}</b> · ${lim}`,
-        unit: 'FPS', color: t.cls, zonas: FPS_ZONAS
+        unit: 'FPS', color: t.cls, zonas: FPS_ZONAS, hot: x.fps >= 144
       });
     }).join('');
 
@@ -399,12 +602,12 @@
       }
     }
 
-    $('fpsResult').innerHTML = `
+    mostrar($('fpsResult'), `
       <p class="headline"><strong>${nombre}</strong> en ${res} con ${g.name} y ${c.name}</p>
       <div class="gauges four">${table}</div>
       ${notaGenerico('fpsGame', j)}${vram}${cap}${rec}
       <p class="aff-note">Estimación orientativa sin DLSS/FSR ni generación de fotogramas: con reescalado puedes ganar bastante más.</p>
-      ${rec.includes('class="rec') ? affNote : ''}`;
+      ${rec.includes('class="rec') ? affNote : ''}`);
   }
 
   // ---------- Tu PC ideal ----------
@@ -501,7 +704,7 @@
     else lim = e.limit === 'gpu' ? 'Limita la gráfica' : 'Limita el procesador';
     const scale = escala(Math.max(e.fps, 60) * 1.05, ESC_FPS);
 
-    const filas = elegido.partes.map(x => `<tr>
+    const filas = elegido.partes.map((x, i) => `<tr style="--f:${i}">
         <th scope="row">${x.tipo}</th>
         <td>${x.nombre}</td>
         <td class="precio">${x.precio ? `~${eur(x.precio)}` : '—'}</td>
@@ -541,9 +744,9 @@
         mejoras.push(b);
       }
     }
-    const tarjetas = mejoras.map(b => {
+    const tarjetas = mejoras.map((b, i) => {
       const cs = cambios(elegido, b);
-      return `<div class="upg">
+      return `<div class="upg" style="--u:${i}">
           <div class="upg-top">
             <span class="upg-extra">+${eur(b.total - elegido.total)}</span>
             <span class="upg-fps">${Math.round(b.est.fps)} FPS <em>+${diff(b.est.fps, e.fps)}%</em></span>
@@ -575,21 +778,21 @@
       if (contenido) bloqueMejoras = `<h3 class="bars-title">${tarjetas ? 'Por un poco más' : 'Si quieres más'}</h3>${contenido}`;
     }
 
-    $('pcResult').innerHTML = `
+    mostrar($('pcResult'), `
       <p class="headline">Tu PC para <strong>${nombre}</strong> en ${res} · calidad ${p.label} · hasta ${eur(presupuesto)}</p>
       <div class="build">
         <div class="build-gauge">
-          ${gauge({ value: e.fps, scale, label: `${Math.round(e.fps)} FPS estimados`, sub: `<b class="t-${t.cls}">${t.label}</b> · ${lim}`, unit: 'FPS', color: t.cls, zonas: FPS_ZONAS })}
+          ${gauge({ value: e.fps, scale, label: `${Math.round(e.fps)} FPS estimados`, sub: `<b class="t-${t.cls}">${t.label}</b> · ${lim}`, unit: 'FPS', color: t.cls, zonas: FPS_ZONAS, hot: e.fps >= 144 })}
         </div>
         <div class="table-wrap build-parts"><table class="parts">
           <tbody>${filas}</tbody>
-          <tfoot><tr><th scope="row">Total</th><td></td><td class="precio">~${eur(elegido.total)}</td><td></td></tr></tfoot>
+          <tfoot><tr><th scope="row">Total</th><td></td><td class="precio">~<span data-cuenta="${elegido.total}" data-fmt="eur">${eur(elegido.total)}</span></td><td></td></tr></tfoot>
         </table></div>
       </div>
       ${notas}
       ${bloqueMejoras}
       <p class="aff-note">Precios orientativos del mercado español (septiembre 2026): el precio real puede variar, consúltalo en Amazon. No incluye monitor, periféricos ni sistema operativo. FPS estimados sin DLSS/FSR.</p>
-      ${affNote}`;
+      ${affNote}`);
   }
 
   // ---------- Buscador de juegos ----------
@@ -709,6 +912,7 @@
       $(`panel-${t.dataset.tab}`).hidden = !on;
     });
     if (scroll) $('herramientas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    animar($(`panel-${id}`).querySelector('.result'), 'arranque');
   }
 
   tabs.forEach((t, i) => {
@@ -751,11 +955,13 @@
 
   $('pcRange').addEventListener('input', () => {
     $('pcBudget').value = $('pcRange').value;
+    modo = 'arrastre';
     renderPc();
   });
   $('pcBudget').addEventListener('input', () => {
     const v = leerPresupuesto();
     if (v !== null) $('pcRange').value = String(Math.min(v, RANGO_MAX));
+    modo = 'arrastre';
     renderPc();
   });
 
@@ -767,16 +973,18 @@
     pc: [['pcGame', 'pcRes', 'pcCal'], renderPc]
   };
   Object.values(renders).forEach(([ids, fn]) => {
-    ids.forEach(id => $(id).addEventListener('change', fn));
+    ids.forEach(id => $(id).addEventListener('change', () => { modo = 'cambio'; fn(); }));
     fn();
   });
 
   $('gpuSwap').addEventListener('click', () => {
     [$('gpuA').value, $('gpuB').value] = [$('gpuB').value, $('gpuA').value];
+    modo = 'cambio';
     renderGpu();
   });
   $('cpuSwap').addEventListener('click', () => {
     [$('cpuA').value, $('cpuB').value] = [$('cpuB').value, $('cpuA').value];
+    modo = 'cambio';
     renderCpu();
   });
 
