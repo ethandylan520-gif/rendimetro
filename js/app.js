@@ -640,24 +640,36 @@
     return PIEZAS.fuentes.find(f => f.w >= need) || PIEZAS.fuentes[PIEZAS.fuentes.length - 1];
   }
 
-  function montar(g, c, grande) {
+  // Gama del PC según la potencia de la gráfica. El resto de piezas va a juego para que el PC quede equilibrado:
+  // de nada sirve una gráfica buena con 16 GB de RAM, una caja que se calienta o el disipador ruidoso de serie.
+  const GAMAS = {
+    1: { nombre: 'entrada', ram: 16, ssd: 'ssd', caja: 'basica', placaAlta: false, disipMin: null },
+    2: { nombre: 'media', ram: 32, ssd: 'ssd', caja: 'buena', placaAlta: false, disipMin: 'aire' },
+    3: { nombre: 'alta', ram: 32, ssd: 'ssd2', caja: 'buena', placaAlta: true, disipMin: 'aire' }
+  };
+  const gamaDe = g => (g.idx >= 70 ? 3 : g.idx >= 40 ? 2 : 1);
+
+  function montar(g, c) {
+    const gama = GAMAS[gamaDe(g)];
     const plat = PIEZAS.plataformas[c.socket];
-    const gb = grande ? 32 : 16;
-    const ram = PIEZAS.ram[plat.ram][gb];
+    // Placa superior en gama alta; en Intel solo compensa con procesadores K (overclock).
+    const placa = gama.placaAlta && plat.alta && (c.brand === 'AMD' || /K$/.test(c.name)) ? plat.alta : plat;
+    const ram = PIEZAS.ram[plat.ram][gama.ram];
+    const ssd = PIEZAS[gama.ssd];
     const fuente = fuentePara(g, c);
-    const caja = grande ? PIEZAS.cajas.buena : PIEZAS.cajas.basica;
-    const disip = PIEZAS.disipadores[c.disipador];
+    const caja = PIEZAS.cajas[gama.caja];
+    const disip = PIEZAS.disipadores[c.disipador === 'incluido' && gama.disipMin ? gama.disipMin : c.disipador];
     const partes = [
       { tipo: 'Gráfica', nombre: g.name, precio: g.precio, q: qGpu(g) },
       { tipo: 'Procesador', nombre: c.name, precio: c.precio, q: qCpu(c) },
-      { tipo: 'Placa base', nombre: `${plat.chipset} (${c.socket})`, precio: plat.precio, q: plat.q },
-      { tipo: 'Memoria RAM', nombre: `${gb} GB ${plat.ram}`, precio: ram.precio, q: ram.q },
-      { tipo: 'Almacenamiento', nombre: PIEZAS.ssd.nombre, precio: PIEZAS.ssd.precio, q: PIEZAS.ssd.q },
+      { tipo: 'Placa base', nombre: `${placa.chipset} (${c.socket})`, precio: placa.precio, q: placa.q },
+      { tipo: 'Memoria RAM', nombre: `${gama.ram} GB ${plat.ram}`, precio: ram.precio, q: ram.q },
+      { tipo: 'Almacenamiento', nombre: ssd.nombre, precio: ssd.precio, q: ssd.q },
       { tipo: 'Fuente', nombre: `${fuente.w} W 80 Plus Gold`, precio: fuente.precio, q: { es: `fuente alimentación ${fuente.w}W 80 Plus Gold`, en: `${fuente.w}W 80 Plus Gold power supply` } },
       { tipo: 'Caja', nombre: caja.nombre, precio: caja.precio, q: caja.q },
       { tipo: 'Disipador', nombre: disip.nombre, precio: disip.precio, q: disip.q }
     ];
-    return { g, c, partes, total: partes.reduce((s, p) => s + p.precio, 0) };
+    return { g, c, gama, partes, total: partes.reduce((s, p) => s + p.precio, 0) };
   }
 
   function mejorHasta(lista, tope) {
@@ -669,14 +681,12 @@
 
   const miniLink = q => `<a class="amz-mini" href="${amazonUrl(q)}" target="_blank" rel="sponsored noopener">Ver en Amazon</a>`;
 
+  // Qué cambia de un PC a otro: gráfica y procesador, y las piezas que suben con la gama (RAM, SSD, placa…).
   function cambios(de, a) {
-    const out = [];
-    if (de.g !== a.g) out.push({ html: `Gráfica: ${de.g.name} → <strong>${a.g.name}</strong>`, q: qGpu(a.g) });
-    if (de.c !== a.c) {
-      const placa = de.c.socket !== a.c.socket ? ' (con otra placa base)' : '';
-      out.push({ html: `Procesador: ${de.c.name} → <strong>${a.c.name}</strong>${placa}`, q: qCpu(a.c) });
-    }
-    return out;
+    return a.partes
+      .map((p, i) => ({ p, antes: de.partes[i] }))
+      .filter(({ p, antes }) => p.nombre !== antes.nombre && p.q)
+      .map(({ p, antes }) => ({ html: `${p.tipo}: ${antes.nombre} → <strong>${p.nombre}</strong>`, q: p.q }));
   }
 
   function leerPresupuesto() {
@@ -704,14 +714,12 @@
       return;
     }
     const res = RES[r].label;
-    // Con la RAM tan cara (32 GB DDR5 ≈ 475 €), los 32 GB y la caja mejor solo compensan en presupuestos altos.
-    const grande = presupuesto >= 1800;
     const lista = [];
     for (const g of GPUS) {
       if (!g.buy) continue;
       for (const c of CPUS) {
         if (!c.buy || !encaja(g, c)) continue;
-        const b = montar(g, c, grande);
+        const b = montar(g, c);
         b.est = estimar(g, c, j, r, p);
         lista.push(b);
       }
@@ -809,6 +817,7 @@
 
     mostrar($('pcResult'), `
       <p class="headline">Tu PC para <strong>${nombre}</strong> en ${res} · calidad ${p.label} · hasta ${eur(presupuesto)}</p>
+      <p class="subline">PC equilibrado de <strong>gama ${elegido.gama.nombre}</strong>: ${elegido.gama.ram} GB de RAM, ${elegido.partes[4].nombre.replace('SSD NVMe', 'SSD de')}${elegido.gama.caja === 'buena' ? ' y caja con buena ventilación' : ''}, a juego con la gráfica.</p>
       <div class="build">
         <div class="build-gauge">
           ${gauge({ value: e.fps, scale, label: `${Math.round(e.fps)} FPS estimados`, sub: `<b class="t-${t.cls}">${t.label}</b> · ${lim}`, unit: 'FPS', color: t.cls, zonas: FPS_ZONAS, hot: e.fps >= 144 })}

@@ -130,14 +130,15 @@ window.JUEGOS = [
 window.PIEZAS = {
   plataformas: {
     AM4: { chipset: 'Placa base B550', ram: 'DDR4', precio: 70, q: { es: 'placa base B550 AM4', en: 'B550 AM4 motherboard' } },
-    AM5: { chipset: 'Placa base B650', ram: 'DDR5', precio: 90, q: { es: 'placa base B650 AM5', en: 'B650 AM5 motherboard' } },
-    LGA1700: { chipset: 'Placa base B760', ram: 'DDR5', precio: 70, q: { es: 'placa base B760 DDR5', en: 'B760 DDR5 motherboard' } },
-    LGA1851: { chipset: 'Placa base B860', ram: 'DDR5', precio: 95, q: { es: 'placa base B860 LGA1851', en: 'B860 LGA1851 motherboard' } }
+    AM5: { alta: { chipset: 'Placa base B850', precio: 115, q: { es: 'placa base B850 AM5', en: 'B850 AM5 motherboard' } }, chipset: 'Placa base B650', ram: 'DDR5', precio: 90, q: { es: 'placa base B650 AM5', en: 'B650 AM5 motherboard' } },
+    LGA1700: { alta: { chipset: 'Placa base Z790', precio: 150, q: { es: 'placa base Z790 DDR5', en: 'Z790 DDR5 motherboard' } }, chipset: 'Placa base B760', ram: 'DDR5', precio: 70, q: { es: 'placa base B760 DDR5', en: 'B760 DDR5 motherboard' } },
+    LGA1851: { alta: { chipset: 'Placa base Z890', precio: 180, q: { es: 'placa base Z890 LGA1851', en: 'Z890 LGA1851 motherboard' } }, chipset: 'Placa base B860', ram: 'DDR5', precio: 95, q: { es: 'placa base B860 LGA1851', en: 'B860 LGA1851 motherboard' } }
   },
   ram: {
     DDR4: { 16: { precio: 120, q: { es: 'memoria RAM DDR4 16GB 3200 2x8GB', en: 'DDR4 16GB 3200 RAM 2x8GB' } }, 32: { precio: 225, q: { es: 'memoria RAM DDR4 32GB 3600 2x16GB', en: 'DDR4 32GB 3600 RAM 2x16GB' } } },
     DDR5: { 16: { precio: 255, q: { es: 'memoria RAM DDR5 16GB 6000', en: 'DDR5 16GB 6000 RAM' } }, 32: { precio: 475, q: { es: 'memoria RAM DDR5 32GB 6000 CL30 2x16GB', en: 'DDR5 32GB 6000 CL30 RAM 2x16GB' } } }
   },
+  ssd2: { nombre: 'SSD NVMe 2 TB', precio: 265, q: { es: 'SSD NVMe 2TB PCIe 4.0', en: '2TB NVMe SSD PCIe 4.0' } },
   ssd: { nombre: 'SSD NVMe 1 TB', precio: 145, q: { es: 'SSD NVMe 1TB PCIe 4.0', en: '1TB NVMe SSD PCIe 4.0' } },
   fuentes: [
     { w: 550, precio: 60 }, { w: 650, precio: 85 }, { w: 750, precio: 95 },
@@ -164,12 +165,12 @@ window.PIEZAS = {
       { name: 'Placa base B550', sub: 'AM4 · DDR4 · para Ryzen 5000', precio: P.plataformas.AM4.precio, det: { Socket: 'AM4', Procesadores: 'Ryzen 3000 y 5000', Memoria: 'DDR4', 'Gráfica': 'PCIe 4.0' }, q: P.plataformas.AM4.q },
       { name: 'Placa base X570', sub: 'AM4 · DDR4 · gama alta', precio: 140, det: { Socket: 'AM4', Procesadores: 'Ryzen 3000 y 5000', Memoria: 'DDR4', 'Gráfica': 'PCIe 4.0', Extra: 'Más conexiones y mejor para overclock' }, q: q('placa base X570 AM4', 'X570 AM4 motherboard') },
       { name: 'Placa base B650', sub: 'AM5 · DDR5 · para Ryzen 7000 y 9000', precio: P.plataformas.AM5.precio, det: { Socket: 'AM5', Procesadores: 'Ryzen 7000, 8000 y 9000', Memoria: 'DDR5', 'Gráfica': 'PCIe 4.0' }, q: P.plataformas.AM5.q },
-      { name: 'Placa base B850', sub: 'AM5 · DDR5 · PCIe 5.0', precio: 115, det: { Socket: 'AM5', Procesadores: 'Ryzen 7000, 8000 y 9000', Memoria: 'DDR5', Extra: 'SSD PCIe 5.0' }, q: q('placa base B850 AM5', 'B850 AM5 motherboard') },
+      { name: 'Placa base B850', sub: 'AM5 · DDR5 · PCIe 5.0', precio: P.plataformas.AM5.alta.precio, det: { Socket: 'AM5', Procesadores: 'Ryzen 7000, 8000 y 9000', Memoria: 'DDR5', Extra: 'SSD PCIe 5.0' }, q: P.plataformas.AM5.alta.q },
       { name: 'Placa base X870', sub: 'AM5 · DDR5 · gama alta', precio: 180, det: { Socket: 'AM5', Procesadores: 'Ryzen 7000, 8000 y 9000', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'USB4 y SSD PCIe 5.0' }, q: q('placa base X870 AM5', 'X870 AM5 motherboard') },
       { name: 'Placa base B760', sub: 'LGA1700 · DDR5 · Intel 12.ª a 14.ª gen.', precio: P.plataformas.LGA1700.precio, det: { Socket: 'LGA1700', Procesadores: 'Intel Core 12.ª, 13.ª y 14.ª gen.', Memoria: 'DDR5 (también hay versiones DDR4)', 'Gráfica': 'PCIe 4.0' }, q: P.plataformas.LGA1700.q },
-      { name: 'Placa base Z790', sub: 'LGA1700 · DDR5 · para overclock', precio: 150, det: { Socket: 'LGA1700', Procesadores: 'Intel Core 12.ª, 13.ª y 14.ª gen.', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'Permite overclock (procesadores K)' }, q: q('placa base Z790 DDR5', 'Z790 DDR5 motherboard') },
+      { name: 'Placa base Z790', sub: 'LGA1700 · DDR5 · para overclock', precio: P.plataformas.LGA1700.alta.precio, det: { Socket: 'LGA1700', Procesadores: 'Intel Core 12.ª, 13.ª y 14.ª gen.', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'Permite overclock (procesadores K)' }, q: P.plataformas.LGA1700.alta.q },
       { name: 'Placa base B860', sub: 'LGA1851 · DDR5 · Core Ultra', precio: P.plataformas.LGA1851.precio, det: { Socket: 'LGA1851', Procesadores: 'Intel Core Ultra 200S', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0' }, q: P.plataformas.LGA1851.q },
-      { name: 'Placa base Z890', sub: 'LGA1851 · DDR5 · gama alta', precio: 180, det: { Socket: 'LGA1851', Procesadores: 'Intel Core Ultra 200S', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'Permite overclock (procesadores K)' }, q: q('placa base Z890 LGA1851', 'Z890 LGA1851 motherboard') }
+      { name: 'Placa base Z890', sub: 'LGA1851 · DDR5 · gama alta', precio: P.plataformas.LGA1851.alta.precio, det: { Socket: 'LGA1851', Procesadores: 'Intel Core Ultra 200S', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'Permite overclock (procesadores K)' }, q: P.plataformas.LGA1851.alta.q }
     ] },
     { id: 'ram', nombre: 'Memoria RAM', items: [
       { name: '16 GB DDR4 3200', sub: '2 × 8 GB · para AM4', precio: P.ram.DDR4[16].precio, det: { Tipo: 'DDR4', Capacidad: '16 GB', Velocidad: '3200 MT/s', 'Compatible con': 'Placas AM4 e Intel con DDR4' }, q: P.ram.DDR4[16].q },
@@ -181,7 +182,7 @@ window.PIEZAS = {
     { id: 'ssd', nombre: 'Almacenamiento', items: [
       { name: 'SSD NVMe 500 GB', sub: 'PCIe 4.0 · para el sistema', precio: 70, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~5.000 MB/s', Caben: '2–3 juegos grandes y el sistema' }, q: q('SSD NVMe 500GB PCIe 4.0', '500GB NVMe SSD PCIe 4.0') },
       { name: 'SSD NVMe 1 TB', sub: 'PCIe 4.0 · el punto justo', precio: P.ssd.precio, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~6.000 MB/s', Caben: '~6–8 juegos grandes' }, q: P.ssd.q },
-      { name: 'SSD NVMe 2 TB', sub: 'PCIe 4.0 · para muchos juegos', precio: 265, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~6.000 MB/s', Caben: '~15 juegos grandes' }, q: q('SSD NVMe 2TB PCIe 4.0', '2TB NVMe SSD PCIe 4.0') },
+      { name: 'SSD NVMe 2 TB', sub: 'PCIe 4.0 · para muchos juegos', precio: P.ssd2.precio, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~6.000 MB/s', Caben: '~15 juegos grandes' }, q: P.ssd2.q },
       { name: 'SSD NVMe 4 TB', sub: 'PCIe 4.0 · biblioteca enorme', precio: 505, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~6.000 MB/s', Caben: '~30 juegos grandes' }, q: q('SSD NVMe 4TB PCIe 4.0', '4TB NVMe SSD PCIe 4.0') },
       { name: 'Disco duro 4 TB', sub: 'HDD · copias y archivos', det: { Formato: '3,5" SATA', Velocidad: '~200 MB/s', Para: 'Copias, fotos y vídeos; para juegos mejor un SSD' }, q: q('disco duro interno 4TB 3.5', '4TB internal hard drive 3.5') }
     ] },
