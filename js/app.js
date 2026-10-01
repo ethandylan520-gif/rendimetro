@@ -340,14 +340,17 @@
   }
 
   // Los selectores empiezan vacíos (para que en los vídeos se vea cómo eliges cada pieza).
-  function fillHardware(select, items, key, vacio) {
+  // conBlanco: añade al final una opción en blanco para volver a "ninguna" (sirve para repetir la animación en los vídeos).
+  function fillHardware(select, items, key, vacio, conBlanco) {
     const brands = [...new Set(items.map(i => i.brand))];
     select.innerHTML = `<option value="" disabled selected hidden>${vacio}</option>` + brands.map(b => {
       const opts = items.filter(i => i.brand === b)
         .sort((x, y) => y[key] - x[key])
         .map(i => `<option value="${i.id}">${i.name}</option>`).join('');
       return `<optgroup label="${b}">${opts}</optgroup>`;
-    }).join('');
+    }).join('') + (conBlanco ? '<option value="" aria-label="Ninguna">&nbsp;</option>' : '');
+    // Al elegir la opción en blanco, el selector vuelve a mostrar "Elige…".
+    select.addEventListener('change', () => { if (!select.value) select.selectedIndex = 0; });
   }
 
   function fillRes(select) {
@@ -1280,7 +1283,7 @@
   });
 
   // ---------- Arranque ----------
-  ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'idx', 'Elige una gráfica…'));
+  ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'idx', 'Elige una gráfica…', true));
   ['cpuA', 'cpuB', 'bnCpu', 'fpsCpu'].forEach(id => fillHardware($(id), CPUS, 'game', 'Elige un procesador…'));
   ['bnRes', 'fpsRes', 'pcRes'].forEach(id => fillRes($(id)));
   const juegosOpts = JUEGOS.map(j => `<option value="${j.id}">${j.name}</option>`).join('');
