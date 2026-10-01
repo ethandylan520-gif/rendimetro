@@ -437,14 +437,57 @@
   .item-score { display: flex; align-items: center; gap: 8px; font-size: .74rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
   .item-bar { flex: 1; height: 6px; border-radius: 6px; background: var(--track); overflow: hidden; }
   .item-bar i { display: block; height: 100%; border-radius: 6px; background: var(--c); box-shadow: 0 0 8px var(--c); }
-  .item-foot { margin-top: auto; padding-top: 4px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+  .item-foot { margin-top: auto; padding-top: 4px; display: flex; flex-direction: column; gap: 8px; }
+  .item-btns { display: flex; gap: 6px; }
+  .item-btns > * { flex: 1; text-align: center; }
   .item-precio { font-family: 'Chakra Petch', sans-serif; font-weight: 700; color: var(--pc); }
   .item-buy {
-    margin-left: auto; text-decoration: none; white-space: nowrap;
+    text-decoration: none; white-space: nowrap;
     background: var(--c); color: var(--ink); font-weight: 800; font-size: .8rem;
     padding: 8px 12px; border-radius: 9px; transition: filter .15s;
   }
   .item-buy:hover { filter: brightness(1.12); }
+  .item-det {
+    border: 1px solid var(--line-2); background: transparent; color: var(--text); cursor: pointer;
+    font: 800 .8rem 'Manrope', sans-serif; padding: 8px 12px; border-radius: 9px; white-space: nowrap;
+    transition: border-color .15s, background .15s;
+  }
+  .item-det:hover { border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
+  .item-det:focus-visible, .item-buy:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+  /* Ficha de detalles de cada pieza */
+  body:has(.ficha[open]) { overflow: hidden; }
+  .ficha {
+    margin: auto; padding: 0; width: min(560px, calc(100% - 24px)); max-height: calc(100dvh - 40px);
+    border: 1px solid var(--line-2); border-radius: 18px; color: var(--text);
+    background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--c) 12%, var(--panel)) 0%, var(--panel) 60%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .6), 0 0 40px -10px color-mix(in srgb, var(--c) 45%, transparent);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .ficha::backdrop { background: rgba(5, 4, 12, .72); backdrop-filter: blur(4px); }
+  .ficha[open] { animation: ficha-in .35s cubic-bezier(.2, 1.2, .4, 1); }
+  @keyframes ficha-in { from { opacity: 0; transform: translateY(18px) scale(.96); } }
+  .ficha-in { padding: 20px 20px 18px; }
+  .ficha-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .ficha-nombre { font-size: 1.45rem; line-height: 1.15; margin: 4px 0 2px; }
+  .ficha-close {
+    flex: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--line-2); background: var(--panel-2); color: var(--text); font-size: 1rem;
+  }
+  .ficha-close:hover { border-color: var(--c); }
+  .ficha .gauge { max-width: 280px; margin: 14px auto 6px; }
+  .ficha-specs { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .9rem; }
+  .ficha-specs th, .ficha-specs td { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .ficha-specs th { color: var(--muted); font-weight: 600; width: 42%; }
+  .ficha-specs td { font-weight: 700; }
+  .ficha-specs small, .ficha-lista small { color: var(--muted); font-weight: 600; }
+  .ficha-sub { font-size: .78rem; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
+  .ficha-sub small { text-transform: none; letter-spacing: 0; }
+  .ficha-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .ficha-lista li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-size: .88rem; }
+  .ficha-lista strong { white-space: nowrap; font-family: 'Chakra Petch', sans-serif; }
+  .ficha-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .ficha-acciones > * { flex: 1 1 140px; text-align: center; padding: 11px 14px; font-size: .86rem; }
   .items-sep { grid-column: 1 / -1; color: var(--muted); font-size: .82rem; font-weight: 700; padding-top: 10px; border-top: 1px solid var(--line); }
   .items.reveal .item.nueva { animation: entra .4s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(min(var(--n, 0), 12) * 35ms); }
   .shop-more { display: flex; justify-content: center; margin-top: 16px; }
@@ -506,7 +549,10 @@
     .items { grid-template-columns: 1fr 1fr; gap: 10px; }
     .item { padding: 12px; }
     .item-name { font-size: .95rem; }
-    .item-buy { padding: 7px 10px; font-size: .76rem; }
+    .item-buy, .item-det { padding: 7px 8px; font-size: .74rem; }
+    .item-btns { flex-direction: column; }
+    .ficha { width: 100%; max-width: none; margin: auto 0 0; border-radius: 18px 18px 0 0; max-height: 88dvh; }
+    .ficha-in { padding: 16px 16px 20px; }
     .gauges.trio .g-sub { font-size: .66rem; line-height: 1.25; }
     .gauge { padding: 10px 6px 12px; border-radius: 14px; }
     .g-label { font-size: .85rem; }
@@ -646,6 +692,10 @@
     <div class="shop-more" id="shopMore"></div>
     <p class="aff-note">Precios orientativos del mercado español, revisados el 1 de octubre de 2026: el precio real puede variar, consúltalo en Amazon. Enlaces de afiliado: si compras a través de ellos, esta web recibe una pequeña comisión sin coste extra para ti.</p>
   </section>
+
+  <dialog class="ficha" id="ficha" aria-labelledby="fichaTitulo">
+    <div class="ficha-in" id="fichaBody"></div>
+  </dialog>
 
   <section class="info" id="como-funciona">
     <h2>Cómo lo calculamos</h2>

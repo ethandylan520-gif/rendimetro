@@ -161,63 +161,63 @@ window.PIEZAS = {
   const q = (es, en) => ({ es, en });
   window.TIENDA = [
     { id: 'placas', nombre: 'Placas base', items: [
-      { name: 'Placa base B550', sub: 'AM4 · DDR4 · para Ryzen 5000', precio: P.plataformas.AM4.precio, q: P.plataformas.AM4.q },
-      { name: 'Placa base X570', sub: 'AM4 · DDR4 · gama alta', precio: 140, q: q('placa base X570 AM4', 'X570 AM4 motherboard') },
-      { name: 'Placa base B650', sub: 'AM5 · DDR5 · para Ryzen 7000 y 9000', precio: P.plataformas.AM5.precio, q: P.plataformas.AM5.q },
-      { name: 'Placa base B850', sub: 'AM5 · DDR5 · PCIe 5.0', precio: 115, q: q('placa base B850 AM5', 'B850 AM5 motherboard') },
-      { name: 'Placa base X870', sub: 'AM5 · DDR5 · gama alta', precio: 180, q: q('placa base X870 AM5', 'X870 AM5 motherboard') },
-      { name: 'Placa base B760', sub: 'LGA1700 · DDR5 · Intel 12.ª a 14.ª gen.', precio: P.plataformas.LGA1700.precio, q: P.plataformas.LGA1700.q },
-      { name: 'Placa base Z790', sub: 'LGA1700 · DDR5 · para overclock', precio: 150, q: q('placa base Z790 DDR5', 'Z790 DDR5 motherboard') },
-      { name: 'Placa base B860', sub: 'LGA1851 · DDR5 · Core Ultra', precio: P.plataformas.LGA1851.precio, q: P.plataformas.LGA1851.q },
-      { name: 'Placa base Z890', sub: 'LGA1851 · DDR5 · gama alta', precio: 180, q: q('placa base Z890 LGA1851', 'Z890 LGA1851 motherboard') }
+      { name: 'Placa base B550', sub: 'AM4 · DDR4 · para Ryzen 5000', precio: P.plataformas.AM4.precio, det: { Socket: 'AM4', Procesadores: 'Ryzen 3000 y 5000', Memoria: 'DDR4', 'Gráfica': 'PCIe 4.0' }, q: P.plataformas.AM4.q },
+      { name: 'Placa base X570', sub: 'AM4 · DDR4 · gama alta', precio: 140, det: { Socket: 'AM4', Procesadores: 'Ryzen 3000 y 5000', Memoria: 'DDR4', 'Gráfica': 'PCIe 4.0', Extra: 'Más conexiones y mejor para overclock' }, q: q('placa base X570 AM4', 'X570 AM4 motherboard') },
+      { name: 'Placa base B650', sub: 'AM5 · DDR5 · para Ryzen 7000 y 9000', precio: P.plataformas.AM5.precio, det: { Socket: 'AM5', Procesadores: 'Ryzen 7000, 8000 y 9000', Memoria: 'DDR5', 'Gráfica': 'PCIe 4.0' }, q: P.plataformas.AM5.q },
+      { name: 'Placa base B850', sub: 'AM5 · DDR5 · PCIe 5.0', precio: 115, det: { Socket: 'AM5', Procesadores: 'Ryzen 7000, 8000 y 9000', Memoria: 'DDR5', Extra: 'SSD PCIe 5.0' }, q: q('placa base B850 AM5', 'B850 AM5 motherboard') },
+      { name: 'Placa base X870', sub: 'AM5 · DDR5 · gama alta', precio: 180, det: { Socket: 'AM5', Procesadores: 'Ryzen 7000, 8000 y 9000', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'USB4 y SSD PCIe 5.0' }, q: q('placa base X870 AM5', 'X870 AM5 motherboard') },
+      { name: 'Placa base B760', sub: 'LGA1700 · DDR5 · Intel 12.ª a 14.ª gen.', precio: P.plataformas.LGA1700.precio, det: { Socket: 'LGA1700', Procesadores: 'Intel Core 12.ª, 13.ª y 14.ª gen.', Memoria: 'DDR5 (también hay versiones DDR4)', 'Gráfica': 'PCIe 4.0' }, q: P.plataformas.LGA1700.q },
+      { name: 'Placa base Z790', sub: 'LGA1700 · DDR5 · para overclock', precio: 150, det: { Socket: 'LGA1700', Procesadores: 'Intel Core 12.ª, 13.ª y 14.ª gen.', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'Permite overclock (procesadores K)' }, q: q('placa base Z790 DDR5', 'Z790 DDR5 motherboard') },
+      { name: 'Placa base B860', sub: 'LGA1851 · DDR5 · Core Ultra', precio: P.plataformas.LGA1851.precio, det: { Socket: 'LGA1851', Procesadores: 'Intel Core Ultra 200S', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0' }, q: P.plataformas.LGA1851.q },
+      { name: 'Placa base Z890', sub: 'LGA1851 · DDR5 · gama alta', precio: 180, det: { Socket: 'LGA1851', Procesadores: 'Intel Core Ultra 200S', Memoria: 'DDR5', 'Gráfica': 'PCIe 5.0', Extra: 'Permite overclock (procesadores K)' }, q: q('placa base Z890 LGA1851', 'Z890 LGA1851 motherboard') }
     ] },
     { id: 'ram', nombre: 'Memoria RAM', items: [
-      { name: '16 GB DDR4 3200', sub: '2 × 8 GB · para AM4', precio: P.ram.DDR4[16].precio, q: P.ram.DDR4[16].q },
-      { name: '32 GB DDR4 3600', sub: '2 × 16 GB · para AM4', precio: P.ram.DDR4[32].precio, q: P.ram.DDR4[32].q },
-      { name: '16 GB DDR5 6000', sub: 'Para AM5 e Intel actuales', precio: P.ram.DDR5[16].precio, q: P.ram.DDR5[16].q },
-      { name: '32 GB DDR5 6000 CL30', sub: '2 × 16 GB · la más recomendada para jugar', precio: P.ram.DDR5[32].precio, q: P.ram.DDR5[32].q },
-      { name: '64 GB DDR5 6000', sub: '2 × 32 GB · edición y streaming', precio: 870, q: q('memoria RAM DDR5 64GB 6000 2x32GB', 'DDR5 64GB 6000 RAM 2x32GB') }
+      { name: '16 GB DDR4 3200', sub: '2 × 8 GB · para AM4', precio: P.ram.DDR4[16].precio, det: { Tipo: 'DDR4', Capacidad: '16 GB', Velocidad: '3200 MT/s', 'Compatible con': 'Placas AM4 e Intel con DDR4' }, q: P.ram.DDR4[16].q },
+      { name: '32 GB DDR4 3600', sub: '2 × 16 GB · para AM4', precio: P.ram.DDR4[32].precio, det: { Tipo: 'DDR4', Capacidad: '32 GB (2 × 16 GB)', Velocidad: '3600 MT/s', 'Compatible con': 'Placas AM4 e Intel con DDR4' }, q: P.ram.DDR4[32].q },
+      { name: '16 GB DDR5 6000', sub: 'Para AM5 e Intel actuales', precio: P.ram.DDR5[16].precio, det: { Tipo: 'DDR5', Capacidad: '16 GB', Velocidad: '6000 MT/s', 'Compatible con': 'Placas AM5, LGA1700 DDR5 y LGA1851' }, q: P.ram.DDR5[16].q },
+      { name: '32 GB DDR5 6000 CL30', sub: '2 × 16 GB · la más recomendada para jugar', precio: P.ram.DDR5[32].precio, det: { Tipo: 'DDR5', Capacidad: '32 GB (2 × 16 GB)', Velocidad: '6000 MT/s CL30', 'Compatible con': 'Placas AM5, LGA1700 DDR5 y LGA1851', Nota: 'La velocidad ideal para los Ryzen 7000 y 9000' }, q: P.ram.DDR5[32].q },
+      { name: '64 GB DDR5 6000', sub: '2 × 32 GB · edición y streaming', precio: 870, det: { Tipo: 'DDR5', Capacidad: '64 GB (2 × 32 GB)', Velocidad: '6000 MT/s', 'Compatible con': 'Placas AM5, LGA1700 DDR5 y LGA1851', Para: 'Edición de vídeo, streaming y muchos programas a la vez' }, q: q('memoria RAM DDR5 64GB 6000 2x32GB', 'DDR5 64GB 6000 RAM 2x32GB') }
     ] },
     { id: 'ssd', nombre: 'Almacenamiento', items: [
-      { name: 'SSD NVMe 500 GB', sub: 'PCIe 4.0 · para el sistema', precio: 70, q: q('SSD NVMe 500GB PCIe 4.0', '500GB NVMe SSD PCIe 4.0') },
-      { name: 'SSD NVMe 1 TB', sub: 'PCIe 4.0 · el punto justo', precio: P.ssd.precio, q: P.ssd.q },
-      { name: 'SSD NVMe 2 TB', sub: 'PCIe 4.0 · para muchos juegos', precio: 265, q: q('SSD NVMe 2TB PCIe 4.0', '2TB NVMe SSD PCIe 4.0') },
-      { name: 'SSD NVMe 4 TB', sub: 'PCIe 4.0 · biblioteca enorme', precio: 505, q: q('SSD NVMe 4TB PCIe 4.0', '4TB NVMe SSD PCIe 4.0') },
-      { name: 'Disco duro 4 TB', sub: 'HDD · copias y archivos', q: q('disco duro interno 4TB 3.5', '4TB internal hard drive 3.5') }
+      { name: 'SSD NVMe 500 GB', sub: 'PCIe 4.0 · para el sistema', precio: 70, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~5.000 MB/s', Caben: '2–3 juegos grandes y el sistema' }, q: q('SSD NVMe 500GB PCIe 4.0', '500GB NVMe SSD PCIe 4.0') },
+      { name: 'SSD NVMe 1 TB', sub: 'PCIe 4.0 · el punto justo', precio: P.ssd.precio, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~6.000 MB/s', Caben: '~6–8 juegos grandes' }, q: P.ssd.q },
+      { name: 'SSD NVMe 2 TB', sub: 'PCIe 4.0 · para muchos juegos', precio: 265, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~6.000 MB/s', Caben: '~15 juegos grandes' }, q: q('SSD NVMe 2TB PCIe 4.0', '2TB NVMe SSD PCIe 4.0') },
+      { name: 'SSD NVMe 4 TB', sub: 'PCIe 4.0 · biblioteca enorme', precio: 505, det: { Formato: 'M.2 2280 NVMe', Interfaz: 'PCIe 4.0', Lectura: 'hasta ~6.000 MB/s', Caben: '~30 juegos grandes' }, q: q('SSD NVMe 4TB PCIe 4.0', '4TB NVMe SSD PCIe 4.0') },
+      { name: 'Disco duro 4 TB', sub: 'HDD · copias y archivos', det: { Formato: '3,5" SATA', Velocidad: '~200 MB/s', Para: 'Copias, fotos y vídeos; para juegos mejor un SSD' }, q: q('disco duro interno 4TB 3.5', '4TB internal hard drive 3.5') }
     ] },
     { id: 'fuentes', nombre: 'Fuentes', items: P.fuentes.map(f => ({
-      name: `Fuente ${f.w} W`, sub: '80 Plus Gold', precio: f.precio,
+      name: `Fuente ${f.w} W`, sub: '80 Plus Gold', precio: f.precio, w: f.w,
       q: q(`fuente alimentación ${f.w}W 80 Plus Gold`, `${f.w}W 80 Plus Gold power supply`)
     })) },
     { id: 'cajas', nombre: 'Cajas', items: [
-      { name: P.cajas.basica.nombre, sub: 'Sencilla y barata', precio: P.cajas.basica.precio, q: P.cajas.basica.q },
-      { name: P.cajas.buena.nombre, sub: 'Frontal de malla, buena temperatura', precio: P.cajas.buena.precio, q: P.cajas.buena.q },
-      { name: 'Caja con cristal templado RGB', sub: 'Ventiladores RGB incluidos', precio: 45, q: q('caja PC ATX cristal templado ventiladores RGB', 'ATX PC case tempered glass RGB fans') },
-      { name: 'Caja Micro-ATX compacta', sub: 'Para PCs pequeños', precio: 30, q: q('caja PC Micro ATX', 'Micro ATX PC case') }
+      { name: P.cajas.basica.nombre, sub: 'Sencilla y barata', precio: P.cajas.basica.precio, det: { Formato: 'ATX (también Micro-ATX)', Ventiladores: 'Normalmente 1 incluido', Para: 'PCs de gama baja y media' }, q: P.cajas.basica.q },
+      { name: P.cajas.buena.nombre, sub: 'Frontal de malla, buena temperatura', precio: P.cajas.buena.precio, det: { Formato: 'ATX (también Micro-ATX)', Frontal: 'De malla: entra más aire', Ventiladores: '2–3 incluidos según modelo', Para: 'Gráficas y procesadores potentes' }, q: P.cajas.buena.q },
+      { name: 'Caja con cristal templado RGB', sub: 'Ventiladores RGB incluidos', precio: 45, det: { Formato: 'ATX (también Micro-ATX)', Laterales: 'Cristal templado', Ventiladores: 'RGB incluidos' }, q: q('caja PC ATX cristal templado ventiladores RGB', 'ATX PC case tempered glass RGB fans') },
+      { name: 'Caja Micro-ATX compacta', sub: 'Para PCs pequeños', precio: 30, det: { Formato: 'Micro-ATX y Mini-ITX', Para: 'PCs pequeños; comprueba que quepa la gráfica' }, q: q('caja PC Micro ATX', 'Micro ATX PC case') }
     ] },
     { id: 'refri', nombre: 'Refrigeración', items: [
-      { name: P.disipadores.aire.nombre, sub: 'Para procesadores de gama media', precio: P.disipadores.aire.precio, q: P.disipadores.aire.q },
-      { name: 'Disipador de doble torre', sub: 'Para procesadores potentes', precio: 45, q: q('disipador CPU doble torre', 'dual tower CPU air cooler') },
-      { name: 'Refrigeración líquida 240 mm', sub: 'AIO · cabe en casi cualquier caja', precio: 50, q: q('refrigeración líquida 240mm', '240mm AIO liquid cooler') },
-      { name: P.disipadores.liquida.nombre, sub: 'AIO · para gama alta', precio: P.disipadores.liquida.precio, q: P.disipadores.liquida.q },
-      { name: 'Ventiladores de caja 120 mm', sub: 'Pack de 3 · más flujo de aire', q: q('ventiladores PC 120mm pack 3', '120mm PC case fans 3 pack') },
-      { name: 'Pasta térmica', sub: 'Para cambiar la del procesador', q: q('pasta térmica CPU', 'CPU thermal paste') }
+      { name: P.disipadores.aire.nombre, sub: 'Para procesadores de gama media', precio: P.disipadores.aire.precio, det: { Tipo: 'Torre con 1 ventilador', Disipa: 'hasta ~150–200 W', Para: 'Ryzen 5 y 7, Core i5' }, q: P.disipadores.aire.q },
+      { name: 'Disipador de doble torre', sub: 'Para procesadores potentes', precio: 45, det: { Tipo: 'Doble torre con 2 ventiladores', Disipa: 'hasta ~250 W', Para: 'Ryzen 9, Core i7 e i9' }, q: q('disipador CPU doble torre', 'dual tower CPU air cooler') },
+      { name: 'Refrigeración líquida 240 mm', sub: 'AIO · cabe en casi cualquier caja', precio: 50, det: { Tipo: 'Líquida AIO, radiador de 240 mm', Disipa: '~200–250 W', Necesita: 'Hueco para radiador de 240 mm en la caja' }, q: q('refrigeración líquida 240mm', '240mm AIO liquid cooler') },
+      { name: P.disipadores.liquida.nombre, sub: 'AIO · para gama alta', precio: P.disipadores.liquida.precio, det: { Tipo: 'Líquida AIO, radiador de 360 mm', Disipa: '250 W o más', Para: 'Core i9, Core Ultra 9, Ryzen 9', Necesita: 'Hueco para radiador de 360 mm en la caja' }, q: P.disipadores.liquida.q },
+      { name: 'Ventiladores de caja 120 mm', sub: 'Pack de 3 · más flujo de aire', det: { 'Tamaño': '120 mm', Cantidad: '3', Para: 'Mejorar la temperatura de la caja' }, q: q('ventiladores PC 120mm pack 3', '120mm PC case fans 3 pack') },
+      { name: 'Pasta térmica', sub: 'Para cambiar la del procesador', det: { 'Cuándo': 'Al cambiar el disipador o cada 2–3 años', Cantidad: 'Una gota del tamaño de un guisante' }, q: q('pasta térmica CPU', 'CPU thermal paste') }
     ] },
     { id: 'monitores', nombre: 'Monitores', items: [
-      { name: 'Monitor 24" 1080p 165 Hz', sub: 'Para eSports y presupuestos ajustados', q: q('monitor gaming 24 pulgadas 1080p 165Hz', '24 inch 1080p 165Hz gaming monitor') },
-      { name: 'Monitor 27" 1440p 180 Hz', sub: 'El más equilibrado para jugar', q: q('monitor gaming 27 pulgadas 1440p 180Hz', '27 inch 1440p 180Hz gaming monitor') },
-      { name: 'Monitor 27" 1440p OLED', sub: 'Colores y respuesta brutales', q: q('monitor gaming OLED 27 pulgadas 1440p', '27 inch 1440p OLED gaming monitor') },
-      { name: 'Monitor 27" 4K 144 Hz', sub: 'Para gráficas de gama alta', q: q('monitor gaming 27 pulgadas 4K 144Hz', '27 inch 4K 144Hz gaming monitor') },
-      { name: 'Monitor ultrapanorámico 34"', sub: '3440 × 1440 · inmersión total', q: q('monitor gaming ultrapanorámico 34 pulgadas', '34 inch ultrawide gaming monitor') }
+      { name: 'Monitor 24" 1080p 165 Hz', sub: 'Para eSports y presupuestos ajustados', det: { 'Resolución': '1920 × 1080', Frecuencia: '165 Hz', 'Gráfica recomendada': 'RTX 5060 / RX 9060 XT o superior' }, q: q('monitor gaming 24 pulgadas 1080p 165Hz', '24 inch 1080p 165Hz gaming monitor') },
+      { name: 'Monitor 27" 1440p 180 Hz', sub: 'El más equilibrado para jugar', det: { 'Resolución': '2560 × 1440', Frecuencia: '180 Hz', 'Gráfica recomendada': 'RTX 5070 / RX 9070 o superior' }, q: q('monitor gaming 27 pulgadas 1440p 180Hz', '27 inch 1440p 180Hz gaming monitor') },
+      { name: 'Monitor 27" 1440p OLED', sub: 'Colores y respuesta brutales', det: { 'Resolución': '2560 × 1440', Panel: 'OLED: negros perfectos y respuesta casi instantánea', 'Gráfica recomendada': 'RTX 5070 Ti / RX 9070 XT o superior' }, q: q('monitor gaming OLED 27 pulgadas 1440p', '27 inch 1440p OLED gaming monitor') },
+      { name: 'Monitor 27" 4K 144 Hz', sub: 'Para gráficas de gama alta', det: { 'Resolución': '3840 × 2160', Frecuencia: '144 Hz', 'Gráfica recomendada': 'RTX 5080 o superior' }, q: q('monitor gaming 27 pulgadas 4K 144Hz', '27 inch 4K 144Hz gaming monitor') },
+      { name: 'Monitor ultrapanorámico 34"', sub: '3440 × 1440 · inmersión total', det: { 'Resolución': '3440 × 1440', Formato: '21:9', 'Gráfica recomendada': 'RTX 5070 Ti / RX 9070 XT o superior' }, q: q('monitor gaming ultrapanorámico 34 pulgadas', '34 inch ultrawide gaming monitor') }
     ] },
     { id: 'perifericos', nombre: 'Periféricos', items: [
-      { name: 'Teclado mecánico gaming', sub: 'Interruptores mecánicos y RGB', q: q('teclado mecánico gaming', 'mechanical gaming keyboard') },
-      { name: 'Ratón gaming ligero', sub: 'Inalámbrico, para shooters', q: q('ratón gaming inalámbrico ligero', 'lightweight wireless gaming mouse') },
-      { name: 'Auriculares gaming', sub: 'Con micrófono', q: q('auriculares gaming con micrófono', 'gaming headset with microphone') },
-      { name: 'Alfombrilla XXL', sub: 'Para teclado y ratón', q: q('alfombrilla ratón XXL gaming', 'XXL gaming mouse pad') },
-      { name: 'Mando para PC', sub: 'Inalámbrico', q: q('mando inalámbrico PC', 'wireless PC controller') },
-      { name: 'Micrófono para streaming', sub: 'USB', q: q('micrófono USB streaming', 'USB streaming microphone') },
-      { name: 'Webcam 1080p', sub: 'Para streaming y llamadas', q: q('webcam 1080p streaming', '1080p streaming webcam') }
+      { name: 'Teclado mecánico gaming', sub: 'Interruptores mecánicos y RGB', det: { Tipo: 'Mecánico', 'Iluminación': 'RGB', Consejo: 'Interruptores rojos para jugar, marrones si también escribes mucho' }, q: q('teclado mecánico gaming', 'mechanical gaming keyboard') },
+      { name: 'Ratón gaming ligero', sub: 'Inalámbrico, para shooters', det: { 'Conexión': 'Inalámbrico', Peso: 'Menos de ~70 g', Para: 'Shooters (CS2, Valorant, Fortnite)' }, q: q('ratón gaming inalámbrico ligero', 'lightweight wireless gaming mouse') },
+      { name: 'Auriculares gaming', sub: 'Con micrófono', det: { 'Micrófono': 'Sí', 'Conexión': 'USB, jack o inalámbricos según modelo' }, q: q('auriculares gaming con micrófono', 'gaming headset with microphone') },
+      { name: 'Alfombrilla XXL', sub: 'Para teclado y ratón', det: { 'Tamaño': '~90 × 40 cm', Para: 'Teclado y ratón a la vez' }, q: q('alfombrilla ratón XXL gaming', 'XXL gaming mouse pad') },
+      { name: 'Mando para PC', sub: 'Inalámbrico', det: { 'Conexión': 'Inalámbrico (Bluetooth o receptor USB)', Para: 'Juegos de coches, deportes y aventuras' }, q: q('mando inalámbrico PC', 'wireless PC controller') },
+      { name: 'Micrófono para streaming', sub: 'USB', det: { 'Conexión': 'USB', Para: 'Streaming, vídeos y chats de voz' }, q: q('micrófono USB streaming', 'USB streaming microphone') },
+      { name: 'Webcam 1080p', sub: 'Para streaming y llamadas', det: { 'Resolución': '1920 × 1080', Para: 'Streaming y videollamadas' }, q: q('webcam 1080p streaming', '1080p streaming webcam') }
     ] }
   ];
 })();

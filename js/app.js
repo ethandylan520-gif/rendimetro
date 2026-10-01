@@ -945,19 +945,19 @@
     if (cat.id === 'gpu') {
       return [...GPUS].sort((a, b) => orden(a, b) || b.idx - a.idx).map(g => ({
         k: 'gpu', marca: g.brand, name: g.name, sub: `${g.vram} GB · ${g.tdp} W · ${g.year}`,
-        barra: g.idx / GPU_TOP, puntos: `${g.idx} pts`, precio: g.precio, q: qGpu(g), antigua: !g.buy
+        barra: g.idx / GPU_TOP, puntos: `${g.idx} pts`, precio: g.precio, q: qGpu(g), antigua: !g.buy, gpu: g
       }));
     }
     if (cat.id === 'cpu') {
       return [...CPUS].sort((a, b) => orden(a, b) || b.game - a.game).map(c => ({
         k: 'cpu', marca: c.brand, name: c.name, sub: `${c.cores} núcleos · ${c.threads} hilos · ${c.socket}`,
-        barra: c.game / CPU_TOP, puntos: `${c.game} pts juegos`, precio: c.precio, q: qCpu(c), antigua: !c.buy
+        barra: c.game / CPU_TOP, puntos: `${c.game} pts juegos`, precio: c.precio, q: qCpu(c), antigua: !c.buy, cpu: c
       }));
     }
     return cat.items.map(x => ({ k: 'info', marca: cat.nombre, ...x }));
   }
 
-  function tarjetaPieza(x, n, nueva) {
+  function tarjetaPieza(x, n, nueva, i) {
     const barra = x.barra != null
       ? `<div class="item-score"><div class="item-bar"><i style="width:${Math.round(x.barra * 100)}%"></i></div><span>${x.puntos}</span></div>`
       : '';
@@ -968,10 +968,120 @@
         ${barra}
         <div class="item-foot">
           ${x.precio ? `<span class="item-precio">~${eur(x.precio)}</span>` : ''}
-          <a class="item-buy" href="${amazonUrl(x.q)}" target="_blank" rel="sponsored noopener" aria-label="Ver ${escapeHtml(x.name)} en Amazon">Ver en Amazon</a>
+          <div class="item-btns">
+            <button type="button" class="item-det" data-i="${i}" aria-label="Detalles de ${escapeHtml(x.name)}">Detalles</button>
+            <a class="item-buy" href="${amazonUrl(x.q)}" target="_blank" rel="sponsored noopener" aria-label="Ver ${escapeHtml(x.name)} en Amazon">Ver en Amazon</a>
+          </div>
         </div>
       </article>`;
   }
+
+  // ---------- Ficha de cada pieza ----------
+  const CPU_REF = CPU.r9800x3d;
+  const GPU_TOPE = Math.max(...GPUS.filter(g => g.buy).map(g => g.idx));
+  const MEMORIA = { AM4: 'DDR4', AM5: 'DDR5', LGA1700: 'DDR4 o DDR5 (según la placa)', LGA1851: 'DDR5', LGA1200: 'DDR4', LGA1151: 'DDR4' };
+  const REFRIGERACION = { incluido: 'Incluida con el procesador', aire: 'Disipador por aire de torre', liquida: 'Líquida o disipador de doble torre' };
+  const FPS_FICHA = [['fortnite', '1080', 'alta'], ['cyberpunk', '1440', 'alta'], ['cs2', '1080', 'baja'], ['bo6', '1440', 'alta']];
+  const fila = (k, v) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`;
+  const porCien = (pts, precio) => (pts / precio * 100).toFixed(1).replace('.', ',');
+
+  function fichaGpu(g) {
+    const filas = [
+      fila('Rendimiento', `${g.idx} pts <small>(RTX 4090 = 100)</small>`),
+      fila('Memoria (VRAM)', `${g.vram} GB`),
+      fila('Consumo', `${g.tdp} W`),
+      fila('Fuente recomendada', `${fuentePara(g, { w: 120 }).w} W 80 Plus Gold`),
+      fila('Conexión', g.x8 ? 'PCIe x8 <small>(en placas PCIe 3.0 pierde algo de rendimiento)</small>' : 'PCIe x16'),
+      fila('Lanzamiento', g.year)
+    ];
+    if (g.precio) filas.push(fila('Precio orientativo', `~${eur(g.precio)} <small>· ${porCien(g.idx, g.precio)} pts por cada 100 €</small>`));
+    const cpuRec = CPUS.filter(c => c.buy && encaja(g, c) && cuello(g, c, '1440').bn <= 5).sort((a, b) => a.precio - b.precio)[0];
+    filas.push(fila('Procesador recomendado', cpuRec
+      ? `${cpuRec.name} <small>o superior, para 1440p</small>`
+      : `${CPU_REF.name} <small>(en 1440p hasta el más rápido se queda algo corto)</small>`));
+    const fps = FPS_FICHA.map(([jid, r, cal]) => {
+      const j = JUEGO[jid], p = PRESETS.find(x => x.id === cal);
+      const e = estimar(g, CPU_REF, j, r, p);
+      return `<li><span>${j.name} <small>${RES[r].label} · ${p.label}</small></span><strong class="t-${fpsTier(e.fps).cls}">${Math.round(e.fps)} FPS</strong></li>`;
+    }).join('');
+    return {
+      k: 'gpu', id: g.id, marca: g.brand, nombre: g.name, antigua: !g.buy, q: qGpu(g), filas,
+      gauge: gauge({ value: g.idx, scale: escala(GPU_TOP * 1.08, ESC_PTS), label: 'Rendimiento', unit: 'PTS', color: 'gpu', hot: g.idx >= 95 }),
+      extra: `<h4 class="ficha-sub">FPS orientativos <small>con un ${CPU_REF.name}</small></h4><ul class="ficha-lista">${fps}</ul>`,
+      acciones: [['gpu', 'gpuA', 'Comparar'], ['fps', 'fpsGpu', 'FPS en más juegos']]
+    };
+  }
+
+  function fichaCpu(c) {
+    const plat = PIEZAS.plataformas[c.socket];
+    const filas = [
+      fila('Juegos', `${c.game} pts <small>(${CPU_REF.name} = 100)</small>`),
+      fila('Productividad', `${c.multi} pts <small>(Ryzen 9 9950X = 100)</small>`),
+      fila('Núcleos / hilos', `${c.cores} / ${c.threads}`),
+      fila('Plataforma', `${c.socket}${plat ? ` <small>· ${plat.chipset.replace('Placa base', 'placa')} o superior</small>` : ''}`),
+      fila('Memoria', MEMORIA[c.socket] || '—')
+    ];
+    if (c.w) filas.push(fila('Consumo jugando', `~${c.w} W`));
+    if (c.disipador) filas.push(fila('Refrigeración', REFRIGERACION[c.disipador]));
+    filas.push(fila('PCIe', c.pcie3 ? 'PCIe 3.0 <small>(las gráficas x8 pierden algo de rendimiento)</small>' : 'PCIe 4.0 o superior'));
+    filas.push(fila('Lanzamiento', c.year));
+    if (c.precio) filas.push(fila('Precio orientativo', `~${eur(c.precio)} <small>· ${porCien(c.game, c.precio)} pts de juegos por cada 100 €</small>`));
+    const aprovecha = Object.keys(RES).map(r => {
+      const tope = GPUS.filter(g => g.buy && cuello(g, c, r).bn <= 5).sort((a, b) => b.idx - a.idx)[0];
+      const txt = !tope ? 'Se queda corto con cualquier gráfica actual' : tope.idx >= GPU_TOPE ? 'Cualquier gráfica actual' : `Hasta una ${tope.name}`;
+      return `<li><span>${RES[r].label}</span><strong>${txt}</strong></li>`;
+    }).join('');
+    return {
+      k: 'cpu', id: c.id, marca: c.brand, nombre: c.name, antigua: !c.buy, q: qCpu(c), filas,
+      gauge: gauge({ value: c.game, scale: escala(CPU_TOP * 1.08, ESC_PTS), label: 'Juegos', unit: 'PTS', color: 'cpu', hot: c.game >= 88 }),
+      extra: `<h4 class="ficha-sub">Gráficas que aprovecha sin cuello de botella</h4><ul class="ficha-lista">${aprovecha}</ul>`,
+      acciones: [['cpu', 'cpuA', 'Comparar'], ['cuello', 'bnCpu', 'Compatibilidad']]
+    };
+  }
+
+  function fichaOtra(x) {
+    let det = x.det || {};
+    if (x.w) {
+      // Fuentes: misma regla que "Tu PC ideal" (gráfica + procesador de ~120 W + 100 W, con un 30 % de margen).
+      const limite = x.w / 1.3 - 220;
+      const tope = GPUS.filter(g => g.buy && g.tdp <= limite).sort((a, b) => b.idx - a.idx)[0];
+      det = {
+        Potencia: `${x.w} W`, Certificación: '80 Plus Gold',
+        'Aguanta gráficas de hasta': `~${Math.floor(limite / 10) * 10} W de consumo`,
+        ...(tope ? { 'Por ejemplo': `${tope.name} (${tope.tdp} W) con un procesador de gama media` } : {})
+      };
+    }
+    const filas = Object.entries(det).map(([k, v]) => fila(k, v));
+    if (x.precio) filas.push(fila('Precio orientativo', `~${eur(x.precio)}`));
+    return { k: 'info', marca: x.marca, nombre: x.name, sub: x.sub, q: x.q, filas };
+  }
+
+  function abrirFicha(x) {
+    const f = x.gpu ? fichaGpu(x.gpu) : x.cpu ? fichaCpu(x.cpu) : fichaOtra(x);
+    const dialogo = $('ficha');
+    dialogo.className = `ficha k-${f.k}`;
+    $('fichaBody').innerHTML = `
+      <div class="ficha-head">
+        <div>
+          <span class="item-brand">${f.marca}${f.antigua ? '<em class="tag-old">Anterior</em>' : ''}</span>
+          <h3 id="fichaTitulo" class="ficha-nombre">${f.nombre}</h3>
+          ${f.sub ? `<p class="item-sub">${f.sub}</p>` : ''}
+        </div>
+        <button type="button" class="ficha-close" aria-label="Cerrar">✕</button>
+      </div>
+      ${f.gauge || ''}
+      <table class="ficha-specs"><tbody>${f.filas.join('')}</tbody></table>
+      ${f.extra || ''}
+      <div class="ficha-acciones">
+        <a class="item-buy" href="${amazonUrl(f.q)}" target="_blank" rel="sponsored noopener">Ver en Amazon</a>
+        ${(f.acciones || []).map(([tab, sel, txt]) => `<button type="button" class="item-det" data-tab="${tab}" data-sel="${sel}" data-id="${f.id}">${txt}</button>`).join('')}
+      </div>
+      <p class="aff-note">Datos y precios orientativos. Enlace de afiliado: si compras a través de él, esta web recibe una pequeña comisión sin coste extra para ti.</p>`;
+    dialogo.showModal();
+    animar($('fichaBody'), 'arranque');
+  }
+
+  let shopVistas = [];
 
   // animarDesde: índice a partir del cual las tarjetas entran animadas (sin valor = sin animación).
   function renderShop(animarDesde) {
@@ -988,13 +1098,14 @@
 
     const todas = piezasDe(cat).filter(x => !shop.marca || x.marca === shop.marca);
     const vistas = shop.todo ? todas : todas.slice(0, VISIBLES);
+    shopVistas = vistas;
     const primeraAntigua = vistas.findIndex(x => x.antigua);
     $('shopItems').innerHTML = vistas.map((x, i) => {
       const sep = i === primeraAntigua
         ? '<p class="items-sep">Generaciones anteriores: ya no se venden nuevas, pero suelen encontrarse de segunda mano o reacondicionadas.</p>'
         : '';
       const nueva = animarDesde != null && i >= animarDesde;
-      return sep + tarjetaPieza(x, nueva ? i - animarDesde : 0, nueva);
+      return sep + tarjetaPieza(x, nueva ? i - animarDesde : 0, nueva, i);
     }).join('');
     $('shopMore').innerHTML = vistas.length < todas.length
       ? `<button type="button">Ver todas (${todas.length})</button>`
@@ -1018,6 +1129,24 @@
     if (!e.target.closest('button')) return;
     shop.todo = true;
     renderShop(VISIBLES);
+  });
+  $('shopItems').addEventListener('click', e => {
+    const b = e.target.closest('.item-det');
+    if (b) abrirFicha(shopVistas[Number(b.dataset.i)]);
+  });
+  // La ficha se cierra con la X, con Esc (lo hace el navegador) o pulsando fuera.
+  // "Comparar", "FPS en más juegos" y "Compatibilidad" llevan la pieza a esa herramienta.
+  $('ficha').addEventListener('click', e => {
+    const dialogo = $('ficha');
+    if (e.target === dialogo || e.target.closest('.ficha-close')) { dialogo.close(); return; }
+    const b = e.target.closest('[data-tab]');
+    if (!b) return;
+    dialogo.close();
+    $(b.dataset.sel).value = b.dataset.id;
+    modo = 'cambio';
+    $(b.dataset.sel).dispatchEvent(new Event('change'));
+    history.replaceState(null, '', `#${b.dataset.tab}`);
+    openTab(b.dataset.tab, true);
   });
 
   // ---------- Pestañas ----------
