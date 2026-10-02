@@ -4,16 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FPS Battle — Compara gráficas, procesadores y FPS en juegos</title>
-<meta name="description" content="Compara tarjetas gráficas y procesadores, detecta cuellos de botella y calcula cuántos FPS sacarás en tus juegos en calidad baja, media, alta y ultra.">
-<meta property="og:title" content="FPS Battle — Compara gráficas, procesadores y FPS">
-<meta property="og:description" content="Gráfica contra gráfica, procesador contra procesador, compatibilidad gráfica + procesador, FPS por juego y tu PC ideal. Gratis y sin registro.">
+<meta name="description" content="Pon tu PC a pelear: compara gráficas y procesadores cara a cara, comprueba si tu gráfica y tu procesador son compatibles, calcula los FPS en Fortnite, Cyberpunk, CS2 y más, y monta tu PC ideal para tu presupuesto. Gratis y sin registro.">
+<meta property="og:title" content="FPS Battle — ¿Cuántos FPS saca tu PC?">
+<meta property="og:description" content="Gráfica contra gráfica, procesador contra procesador, compatibilidad, FPS por juego y tu PC ideal. Gratis y sin registro.">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="FPS Battle">
+<meta property="og:url" content="https://ethandylan520-gif.github.io/rendimetro/">
+<meta property="og:image" content="https://ethandylan520-gif.github.io/rendimetro/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FPS Battle: duelo de gráficas con velocímetros de rendimiento">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0a0816">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"FPS Battle","url":"https://ethandylan520-gif.github.io/rendimetro/","applicationCategory":"UtilitiesApplication","operatingSystem":"Cualquiera (navegador web)","inLanguage":"es","description":"Comparador de hardware para PC: gráficas y procesadores cara a cara, compatibilidad, FPS por juego y PC ideal según tu presupuesto.","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0816'/%3E%3Crect x='6' y='18' width='5' height='8' rx='1.5' fill='%2300e5ff'/%3E%3Crect x='13.5' y='12' width='5' height='14' rx='1.5' fill='%2300e5ff'/%3E%3Crect x='21' y='6' width='5' height='20' rx='1.5' fill='%23ff4fd8'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/chakra-petch-700.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* Tipografías alojadas en la propia web (licencia SIL OFL): no se conecta con Google al entrar. */
+  @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 200 800; font-display: swap; src: url(fonts/manrope.woff2) format('woff2'); }
+  @font-face { font-family: 'Chakra Petch'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/chakra-petch-600.woff2) format('woff2'); }
+  @font-face { font-family: 'Chakra Petch'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/chakra-petch-700.woff2) format('woff2'); }
   :root {
     color-scheme: dark;
     --bg: #0a0816;
@@ -557,6 +571,22 @@
   }
   .shop-more button:hover { border-color: var(--gpu); }
 
+  /* Guías rápidas */
+  .guias { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .guia { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; transition: border-color .2s; }
+  .guia[open] { border-color: var(--line-2); }
+  .guia summary { cursor: pointer; list-style: none; padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; }
+  .guia summary::-webkit-details-marker { display: none; }
+  .guia summary strong { font-family: 'Chakra Petch', sans-serif; font-size: 1.08rem; }
+  .guia summary strong::after { content: " +"; color: var(--gpu); }
+  .guia[open] summary strong::after { content: " −"; }
+  .guia .num { font-family: 'Chakra Petch', sans-serif; color: var(--gpu); font-size: .78rem; letter-spacing: 1px; }
+  .guia-sub { color: var(--muted); font-size: .9rem; }
+  .guia-texto { padding: 0 20px 18px; color: var(--text-2); font-size: .94rem; display: flex; flex-direction: column; gap: 10px; }
+  .guia-texto ul { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .guia-texto a, .faq a { color: var(--gpu); }
+  .guia summary:focus-visible, .faq summary:focus-visible { outline: 2px solid var(--gpu); outline-offset: 2px; border-radius: 8px; }
+
   .faq { display: flex; flex-direction: column; gap: 10px; }
   .faq details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
   .faq summary { cursor: pointer; font-weight: 800; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
@@ -568,12 +598,37 @@
   footer { margin-top: 70px; border-top: 1px solid var(--line); padding: 30px 0 40px; color: var(--muted); font-size: .84rem; }
   footer p + p { margin-top: 8px; }
   footer strong { color: var(--text); }
+  .pie-top { display: flex; justify-content: space-between; gap: 30px; flex-wrap: wrap; padding-bottom: 20px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .pie-marca { max-width: 460px; display: flex; flex-direction: column; gap: 8px; }
+  .pie-marca p { margin: 0; }
+  .pie-links { display: flex; flex-direction: column; gap: 8px; }
+  .pie-links a { color: var(--text-2); text-decoration: none; font-weight: 600; }
+  .pie-links a:hover { color: var(--gpu); }
+
+  /* Aviso de cookies (solo informativo: la web no usa cookies) */
+  .aviso-cookies {
+    position: fixed; left: 50%; bottom: 16px; z-index: 60; transform: translateX(-50%);
+    width: min(620px, calc(100% - 24px)); display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line-2);
+    background: rgba(18, 15, 36, .96); backdrop-filter: blur(8px); box-shadow: 0 18px 50px rgba(0, 0, 0, .55);
+    font-size: .86rem; color: var(--text-2); animation: entra .45s cubic-bezier(.2, .8, .2, 1) backwards;
+  }
+  .aviso-cookies[hidden] { display: none; }
+  .aviso-cookies p { margin: 0; flex: 1; }
+  .aviso-cookies strong { color: var(--text); }
+  .aviso-cookies a { color: var(--gpu); }
+  .aviso-cookies button {
+    flex: none; border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer;
+    background: linear-gradient(90deg, var(--gpu), var(--cpu)); color: var(--ink); font: 800 .86rem 'Manrope', sans-serif;
+  }
+  .aviso-cookies button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
   @media (max-width: 860px) {
     .pickers.four { grid-template-columns: 1fr 1fr; }
     .pickers.three { grid-template-columns: 1fr 1fr; }
     .pickers.three .field:last-child { grid-column: 1 / -1; }
     .cards { grid-template-columns: 1fr; }
+    .guias { grid-template-columns: 1fr; }
     .gauges.four { grid-template-columns: repeat(2, 1fr); }
     .duelos { grid-template-columns: 1fr; }
     .items { grid-template-columns: repeat(3, 1fr); }
@@ -585,6 +640,8 @@
     .upgrades { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
+    .aviso-cookies { flex-direction: column; align-items: stretch; gap: 10px; bottom: 10px; }
+    .pie-top { flex-direction: column; gap: 18px; }
     .wrap { padding: 0 16px; }
     nav.links { display: none; }
     .hero { padding: 40px 0 26px; }
@@ -758,6 +815,59 @@
     <div class="ficha-in" id="fichaBody"></div>
   </dialog>
 
+  <section class="info" id="guias">
+    <h2>Guías rápidas</h2>
+    <p class="shop-intro">Lo básico para acertar al comprar o mejorar tu PC, sin tecnicismos.</p>
+    <div class="guias">
+      <details class="guia">
+        <summary><span class="num">GUÍA 01</span><strong>Qué gráfica comprar según tu pantalla</strong><span class="guia-sub">1080p, 1440p o 4K: cada resolución pide una gama distinta.</span></summary>
+        <div class="guia-texto">
+          <p>La resolución de tu monitor es lo que más decide qué gráfica necesitas. Cuantos más píxeles, más trabajo para la gráfica.</p>
+          <ul>
+            <li><strong>1080p:</strong> la gama de entrada (RTX 5050 o 5060, RX 7600, Intel Arc B580) mueve casi todos los juegos en calidad media o alta.</li>
+            <li><strong>1440p:</strong> lo ideal es la gama media (RTX 5060 Ti de 16 GB, RX 9060 XT de 16 GB, RTX 5070, RX 9070). Aquí la memoria de vídeo empieza a importar: mejor 12–16 GB.</li>
+            <li><strong>4K, o 1440p con muchos FPS:</strong> gama alta (RX 9070 XT, RTX 5070 Ti, RTX 5080).</li>
+          </ul>
+          <p>¿Dudas entre dos? Ponlas cara a cara en <a href="#gpu">Gráfica vs gráfica</a> y mira cuántos FPS dan en tus juegos en <a href="#fps">FPS por juego</a>.</p>
+        </div>
+      </details>
+      <details class="guia">
+        <summary><span class="num">GUÍA 02</span><strong>Cuánta memoria RAM necesitas para jugar</strong><span class="guia-sub">16, 32 o 64 GB, y por qué no eliges entre DDR4 y DDR5.</span></summary>
+        <div class="guia-texto">
+          <ul>
+            <li><strong>16 GB:</strong> suficientes para juegos competitivos y para la mayoría de juegos en un PC de entrada.</li>
+            <li><strong>32 GB:</strong> lo recomendable hoy para juegos exigentes, para hacer directos o para tener el navegador y Discord abiertos mientras juegas.</li>
+            <li><strong>64 GB:</strong> solo compensan para edición de vídeo, 3D o programas muy pesados.</li>
+          </ul>
+          <p>El tipo de memoria lo marcan la placa base y el procesador: AM4 usa DDR4; AM5 y los Intel Core Ultra usan DDR5. Pon siempre dos módulos iguales (por ejemplo 2 × 16 GB) para que funcionen en doble canal: rinden bastante más que uno solo.</p>
+        </div>
+      </details>
+      <details class="guia">
+        <summary><span class="num">GUÍA 03</span><strong>Cuello de botella: qué es y cuándo preocuparse</strong><span class="guia-sub">Cuando una pieza frena a la otra.</span></summary>
+        <div class="guia-texto">
+          <p>El procesador prepara cada fotograma y la gráfica lo dibuja. Si uno de los dos va mucho más lento, el otro se queda esperando: eso es el cuello de botella.</p>
+          <ul>
+            <li>En <strong>1080p</strong> y con gráficas potentes suele limitar el procesador.</li>
+            <li>En <strong>4K</strong> casi siempre limita la gráfica, y eso es lo normal.</li>
+            <li>Un 5–10 % no se nota. A partir de un 20–30 % sí, sobre todo en juegos competitivos, donde además los FPS bajan de golpe en los momentos con más acción.</li>
+          </ul>
+          <p>Compruébalo con tu equipo en <a href="#cuello">Compatibilidad gráfica + procesador</a>: te decimos cuánto pierdes y qué te conviene mejorar.</p>
+        </div>
+      </details>
+      <details class="guia">
+        <summary><span class="num">GUÍA 04</span><strong>¿Mejoro primero la gráfica o el procesador?</strong><span class="guia-sub">Depende de a qué juegues y a qué resolución.</span></summary>
+        <div class="guia-texto">
+          <ul>
+            <li><strong>Juegos competitivos</strong> (CS2, Valorant, Fortnite) buscando muchos FPS: suele ganar el procesador.</li>
+            <li><strong>Juegos muy gráficos</strong> (Cyberpunk 2077, Alan Wake 2, Black Myth: Wukong) en alta calidad o resolución: casi siempre la gráfica.</li>
+            <li>Si el procesador nuevo usa otra plataforma, tendrás que cambiar también la placa base y quizá la RAM: súmalo al presupuesto.</li>
+          </ul>
+          <p>En <a href="#fps">FPS por juego</a> verás qué pieza limita en cada calidad, y en <a href="#pc">Tu PC ideal</a> cuánto ganas por un poco más de dinero.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
   <section class="info" id="como-funciona">
     <h2>Cómo lo calculamos</h2>
     <div class="cards">
@@ -792,7 +902,27 @@
       </details>
       <details>
         <summary>¿Los precios son exactos?</summary>
-        <p>No. En "Tu PC ideal" usamos precios orientativos del mercado para poder ajustarnos a tu presupuesto, pero cambian cada día. Antes de comprar, mira el precio y la disponibilidad actuales en Amazon desde cada enlace.</p>
+        <p>No. Son precios orientativos del mercado español que revisamos cada semana, y nos sirven para ajustar "Tu PC ideal" a tu presupuesto. Los precios reales cambian a diario: antes de comprar, mira el precio y la disponibilidad en Amazon desde cada enlace.</p>
+      </details>
+      <details>
+        <summary>¿Es gratis? ¿Hay que registrarse?</summary>
+        <p>Es gratis y no hace falta registrarse ni dar ningún dato. Todo se calcula en tu propio navegador.</p>
+      </details>
+      <details>
+        <summary>¿Qué significan los colores de los FPS?</summary>
+        <p>Rojo: menos de 30 FPS, no jugable. Amarillo: de 30 a 60, jugable. Verde: de 60 a 144, fluido. Violeta: más de 144, nivel competitivo, ideal para monitores de alta frecuencia.</p>
+      </details>
+      <details>
+        <summary>¿Sirve para portátiles?</summary>
+        <p>No. Las puntuaciones son de gráficas y procesadores de sobremesa. Las versiones de portátil con el mismo nombre suelen rendir bastante menos porque consumen menos energía.</p>
+      </details>
+      <details>
+        <summary>Mi juego no aparece, ¿qué hago?</summary>
+        <p>En "FPS por juego" y "Tu PC ideal" puedes escribir cualquier juego. Si no lo tenemos, elige si es ligero (tipo eSports), de exigencia media o exigente (tipo AAA reciente) y te damos una estimación aproximada.</p>
+      </details>
+      <details>
+        <summary>¿Por qué hay enlaces a Amazon?</summary>
+        <p>Son enlaces de afiliado: si compras a través de ellos, esta web recibe una pequeña comisión y a ti te cuesta lo mismo. Eso no cambia las recomendaciones, que salen de los cálculos de rendimiento.</p>
       </details>
     </div>
   </section>
@@ -800,13 +930,32 @@
 
 <footer>
   <div class="wrap">
-    <p><strong>FPS Battle</strong> · Como Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables. As an Amazon Associate I earn from qualifying purchases.</p>
-    <p>Puntuaciones y FPS orientativos, actualizados en septiembre de 2026. Las marcas mencionadas pertenecen a sus respectivos propietarios. Esta web no usa cookies.</p>
+    <div class="pie-top">
+      <div class="pie-marca">
+        <a class="brand" href="#">FPS <span>Battle</span></a>
+        <p>Comparador gratuito de hardware para PC: duelos de gráficas y procesadores, compatibilidad, FPS por juego y el PC ideal para tu presupuesto. Hecho en España para gente que juega.</p>
+      </div>
+      <nav class="pie-links" aria-label="Enlaces del pie">
+        <a href="#herramientas">Herramientas</a>
+        <a href="#piezas">Todas las piezas</a>
+        <a href="#guias">Guías</a>
+        <a href="#preguntas">Preguntas frecuentes</a>
+        <a href="privacidad.html">Privacidad y cookies</a>
+      </nav>
+    </div>
+    <p>Como Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables. As an Amazon Associate I earn from qualifying purchases.</p>
+    <p>Puntuaciones y FPS orientativos; precios revisados cada semana. Las marcas mencionadas pertenecen a sus respectivos propietarios. Esta web no usa cookies propias ni de seguimiento.</p>
+    <p>© 2026 FPS Battle</p>
   </div>
 </footer>
 
-<script src="js/config.js?v=202610012237"></script>
-<script src="js/data.js?v=202610012237"></script>
-<script src="js/app.js?v=202610012237"></script>
+<div class="aviso-cookies" id="avisoCookies" role="region" aria-label="Aviso sobre cookies" hidden>
+  <p><strong>🍪 Sin cookies de seguimiento.</strong> FPS Battle no usa cookies propias ni de terceros. Los botones "Ver en Amazon" son enlaces de afiliado: si entras en Amazon, allí se aplican sus cookies. <a href="privacidad.html">Más información</a></p>
+  <button type="button" id="avisoOk">Entendido</button>
+</div>
+
+<script src="js/config.js?v=202610021726"></script>
+<script src="js/data.js?v=202610021726"></script>
+<script src="js/app.js?v=202610021726"></script>
 </body>
 </html>

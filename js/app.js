@@ -1292,6 +1292,20 @@
     if (trio.dataset.tono === 'bad') reiniciarClase(trio, 'roto');
   });
 
+  // ---------- Aviso de cookies ----------
+  // Solo informa (la web no usa cookies). Se recuerda que lo cerraste en tu navegador para no volver a mostrarlo.
+  (() => {
+    const aviso = $('avisoCookies');
+    let cerrado = false;
+    try { cerrado = localStorage.getItem('fpsbattle-aviso') === '1'; } catch { /* almacenamiento bloqueado */ }
+    if (cerrado) return;
+    aviso.hidden = false;
+    $('avisoOk').addEventListener('click', () => {
+      aviso.hidden = true;
+      try { localStorage.setItem('fpsbattle-aviso', '1'); } catch { /* almacenamiento bloqueado */ }
+    });
+  })();
+
   // ---------- Pestañas ----------
   const tabs = [...document.querySelectorAll('.tab')];
 
