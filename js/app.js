@@ -6,13 +6,15 @@
   const GPU_TOP = Math.max(...GPUS.map(g => g.idx));
   const CPU_TOP = Math.max(...CPUS.map(c => c.game));
   const MULTI_TOP = Math.max(...CPUS.map(c => c.multi));
-  // Nota de 0 a 100 para mostrar. Gráficas: la nota fijada en data.js (la RTX 5090 es el 100).
-  // Procesadores: el más potente es el 100 y la curva es generosa con el resto. Los FPS siguen saliendo del rendimiento real.
-  const nota = (x, top) => Math.round(100 * Math.pow(Math.max(0, x) / top, 0.4));
+  // Nota de 0 a 100 para mostrar: la pieza más potente es el 100 y una curva suave es algo generosa con el resto,
+  // sin cambiar nunca el orden real (RTX 4090 = 86, RTX 5070 = 61, RTX 4060 = 38). Los FPS y los % de los titulares son los reales.
+  // Una gráfica puede llevar su nota fijada a mano en data.js (nota: N).
+  const nota = (x, top) => Math.round(100 * Math.pow(Math.max(0, x) / top, 0.65));
+  GPUS.forEach(g => { if (g.nota == null) g.nota = nota(g.idx, GPU_TOP); });
   const notaGpu = g => g.nota, notaJuegos = c => nota(c.game, CPU_TOP), notaMulti = c => nota(c.multi, MULTI_TOP);
-  // Gama de cada pieza (en las gráficas, los cortes coinciden con las gamas que usa "Tu PC ideal").
+  // Gama de cada pieza (las de gráficas son las mismas que usa "Tu PC ideal").
   const GAMA_TXT = { tope: 'Tope de gama', alta: 'Gama alta', media: 'Gama media', baja: 'Gama baja' };
-  const gamaGpu = g => (g.nota >= 85 ? 'tope' : g.nota >= 68 ? 'alta' : g.nota >= 37 ? 'media' : 'baja');
+  const gamaGpu = g => (g.idx >= 95 ? 'tope' : g.idx >= 70 ? 'alta' : g.idx >= 40 ? 'media' : 'baja');
   const gamaCpu = c => (c.game >= 95 ? 'tope' : c.game >= 80 ? 'alta' : c.game >= 60 ? 'media' : 'baja');
   const gamaMulti = c => (c.multi >= 95 ? 'tope' : c.multi >= 70 ? 'alta' : c.multi >= 40 ? 'media' : 'baja');
 
@@ -445,10 +447,10 @@
     if (a === b) {
       head = 'Has elegido la misma gráfica en los dos lados.';
     } else {
-      const [w, l] = a.nota > b.nota || (a.nota === b.nota && a.idx >= b.idx) ? [a, b] : [b, a];
-      const d = diff(w.nota, l.nota);
-      if (d >= 3) gana = w;
-      head = d < 3
+      const [w, l] = a.idx >= b.idx ? [a, b] : [b, a];
+      const d = diff(w.idx, l.idx), igual = d < 3 || w.nota === l.nota;
+      if (!igual) gana = w;
+      head = igual
         ? `<strong>${a.name}</strong> y <strong>${b.name}</strong> rinden prácticamente igual.`
         : `<strong>${w.name}</strong> rinde un <strong class="hl-gpu"><span data-cuenta="${d}">${d}</span>% más</strong> que ${l.name}.`;
     }
