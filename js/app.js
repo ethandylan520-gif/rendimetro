@@ -6,13 +6,13 @@
   const GPU_TOP = Math.max(...GPUS.map(g => g.idx));
   const CPU_TOP = Math.max(...CPUS.map(c => c.game));
   const MULTI_TOP = Math.max(...CPUS.map(c => c.multi));
-  // Nota de 0 a 100 para mostrar. La pieza más potente es el 100 y la curva es generosa con el resto:
-  // es una nota, no un porcentaje exacto de rendimiento (los % de los titulares y los FPS sí son los reales).
+  // Nota de 0 a 100 para mostrar. Gráficas: la nota fijada en data.js (la RTX 5090 es el 100).
+  // Procesadores: el más potente es el 100 y la curva es generosa con el resto. Los FPS siguen saliendo del rendimiento real.
   const nota = (x, top) => Math.round(100 * Math.pow(Math.max(0, x) / top, 0.4));
-  const notaGpu = g => nota(g.idx, GPU_TOP), notaJuegos = c => nota(c.game, CPU_TOP), notaMulti = c => nota(c.multi, MULTI_TOP);
-  // Gama de cada pieza (las de gráficas son las mismas que usa "Tu PC ideal").
+  const notaGpu = g => g.nota, notaJuegos = c => nota(c.game, CPU_TOP), notaMulti = c => nota(c.multi, MULTI_TOP);
+  // Gama de cada pieza (en las gráficas, los cortes coinciden con las gamas que usa "Tu PC ideal").
   const GAMA_TXT = { tope: 'Tope de gama', alta: 'Gama alta', media: 'Gama media', baja: 'Gama baja' };
-  const gamaGpu = g => (g.idx >= 95 ? 'tope' : g.idx >= 70 ? 'alta' : g.idx >= 40 ? 'media' : 'baja');
+  const gamaGpu = g => (g.nota >= 85 ? 'tope' : g.nota >= 68 ? 'alta' : g.nota >= 37 ? 'media' : 'baja');
   const gamaCpu = c => (c.game >= 95 ? 'tope' : c.game >= 80 ? 'alta' : c.game >= 60 ? 'media' : 'baja');
   const gamaMulti = c => (c.multi >= 95 ? 'tope' : c.multi >= 70 ? 'alta' : c.multi >= 40 ? 'media' : 'baja');
 
@@ -403,7 +403,7 @@
     const brands = [...new Set(items.map(i => i.brand))];
     select.innerHTML = `<option value="" disabled selected hidden>${vacio}</option>` + brands.map(b => {
       const opts = items.filter(i => i.brand === b)
-        .sort((x, y) => y[key] - x[key])
+        .sort((x, y) => y[key] - x[key] || (y.idx || 0) - (x.idx || 0))
         .map(i => `<option value="${i.id}">${i.name}</option>`).join('');
       return `<optgroup label="${b}">${opts}</optgroup>`;
     }).join('') + (conBlanco ? '<option value="" aria-label="Ninguna">&nbsp;</option>' : '');
@@ -445,14 +445,14 @@
     if (a === b) {
       head = 'Has elegido la misma gráfica en los dos lados.';
     } else {
-      const [w, l] = a.idx >= b.idx ? [a, b] : [b, a];
-      const d = diff(w.idx, l.idx);
+      const [w, l] = a.nota > b.nota || (a.nota === b.nota && a.idx >= b.idx) ? [a, b] : [b, a];
+      const d = diff(w.nota, l.nota);
       if (d >= 3) gana = w;
       head = d < 3
         ? `<strong>${a.name}</strong> y <strong>${b.name}</strong> rinden prácticamente igual.`
         : `<strong>${w.name}</strong> rinde un <strong class="hl-gpu"><span data-cuenta="${d}">${d}</span>% más</strong> que ${l.name}.`;
     }
-    const eff = g => Math.round(g.idx / g.tdp * 1000) / 10;
+    const eff = g => Math.round(g.nota / g.tdp * 1000) / 10;
     // Suspense: las dos agujas tiemblan en blanco y el resultado se oculta hasta que aterrizan (ver ejecutar y decidirDuelo).
     mostrar($('gpuResult'), `
       <p class="headline">${head}</p>
@@ -465,7 +465,7 @@
       <div class="table-wrap"><table class="specs">
         <thead><tr><th></th><th>${a.name}</th><th>${b.name}</th></tr></thead>
         <tbody>
-          ${specRow('Nota', { num: a.idx, txt: `${notaGpu(a)} / 100` }, { num: b.idx, txt: `${notaGpu(b)} / 100` }, 'high')}
+          ${specRow('Nota', { num: a.nota, txt: `${notaGpu(a)} / 100` }, { num: b.nota, txt: `${notaGpu(b)} / 100` }, 'high')}
           ${specRow('Memoria (VRAM)', { num: a.vram, txt: `${a.vram} GB` }, { num: b.vram, txt: `${b.vram} GB` }, 'high')}
           ${specRow('Consumo', { num: a.tdp, txt: `${a.tdp} W` }, { num: b.tdp, txt: `${b.tdp} W` }, 'low')}
           ${specRow('Eficiencia', { num: eff(a), txt: `${eff(a)} pts / 100 W` }, { num: eff(b), txt: `${eff(b)} pts / 100 W` }, 'high')}
@@ -1099,7 +1099,7 @@
   function piezasDe(cat) {
     const orden = (a, b) => Number(Boolean(b.buy)) - Number(Boolean(a.buy));
     if (cat.id === 'gpu') {
-      return [...GPUS].sort((a, b) => orden(a, b) || b.idx - a.idx).map(g => ({
+      return [...GPUS].sort((a, b) => orden(a, b) || b.nota - a.nota || b.idx - a.idx).map(g => ({
         k: 'gpu', marca: g.brand, name: g.name, sub: `${g.vram} GB · ${g.tdp} W · ${g.year}`,
         barra: notaGpu(g) / 100, puntos: `${notaGpu(g)} / 100`, precio: g.precio, q: qGpu(g), antigua: !g.buy, gpu: g
       }));
@@ -1150,7 +1150,7 @@
       fila('Conexión', g.x8 ? 'PCIe x8 <small>(en placas PCIe 3.0 pierde algo de rendimiento)</small>' : 'PCIe x16'),
       fila('Lanzamiento', g.year)
     ];
-    if (g.precio) filas.push(fila('Precio orientativo', `~${eur(g.precio)} <small>· ${porCien(g.idx, g.precio)} pts por cada 100 €</small>`));
+    if (g.precio) filas.push(fila('Precio orientativo', `~${eur(g.precio)} <small>· ${porCien(g.nota, g.precio)} puntos por cada 100 €</small>`));
     const cpuRec = CPUS.filter(c => c.buy && encaja(g, c) && cuello(g, c, '1440').bn <= 5).sort((a, b) => a.precio - b.precio)[0];
     filas.push(fila('Procesador recomendado', cpuRec
       ? `${cpuRec.name} <small>o superior, para 1440p</small>`
@@ -1424,7 +1424,7 @@
   });
 
   // ---------- Arranque ----------
-  ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'idx', 'Elige una gráfica…', true));
+  ['gpuA', 'gpuB', 'bnGpu', 'fpsGpu'].forEach(id => fillHardware($(id), GPUS, 'nota', 'Elige una gráfica…', true));
   ['cpuA', 'cpuB', 'bnCpu', 'fpsCpu'].forEach(id => fillHardware($(id), CPUS, 'game', 'Elige un procesador…', true));
   ['bnRes', 'fpsRes', 'pcRes'].forEach(id => fillRes($(id)));
   const juegosOpts = JUEGOS.map(j => `<option value="${j.id}">${j.name}</option>`).join('');
