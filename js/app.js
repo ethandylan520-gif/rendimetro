@@ -10,16 +10,19 @@
   // para el resto, sin pasar de 99 para que solo haya un 100 (RTX 4090 = 82, RTX 5070 = 50, RTX 4060 = 26).
   // Una gráfica puede llevar su nota fijada a mano en data.js (nota: N).
   const nota = (x, top) => (x >= top ? 100 : Math.min(99, Math.round(100 * Math.max(0, x) / top) + 3));
-  // Gráficas desde la RX 7900 XTX hacia abajo: algo más generosas (curva suave que parte de la XTX con 2 puntos más),
-  // sin adelantar nunca a una que rinda más (RTX 5070 = 55, RTX 4060 = 33).
-  const GEN_DESDE = GPU.rx7900xtx.idx, GEN_NOTA = nota(GEN_DESDE, GPU_TOP) + 2;
-  const notaGpuBase = idx => (idx > GEN_DESDE ? nota(idx, GPU_TOP)
-    : Math.max(nota(idx, GPU_TOP), Math.round(GEN_NOTA * Math.pow(Math.max(0, idx) / GEN_DESDE, 0.7))));
-  GPUS.forEach(g => { if (g.nota == null) g.nota = notaGpuBase(g.idx); });
-  const notaGpu = g => g.nota, notaJuegos = c => nota(c.game, CPU_TOP), notaMulti = c => nota(c.multi, MULTI_TOP);
   // Gama de cada pieza (las de gráficas son las mismas que usa "Tu PC ideal").
   const GAMA_TXT = { tope: 'Tope de gama', alta: 'Gama alta', media: 'Gama media', baja: 'Gama baja' };
   const gamaGpu = g => (g.idx >= 95 ? 'tope' : g.idx >= 70 ? 'alta' : g.idx >= 40 ? 'media' : 'baja');
+  // Gráficas desde la RX 7900 XTX hacia abajo: algo más generosas (curva suave que parte de la XTX con 2 puntos más),
+  // y la gama alta con 4 puntos más todavía; nunca adelanta una a otra que rinda más (RTX 5080 = 72, RTX 5070 = 55, RTX 4060 = 33).
+  const GEN_DESDE = GPU.rx7900xtx.idx, GEN_NOTA = nota(GEN_DESDE, GPU_TOP) + 2, EXTRA_ALTA = 4;
+  const notaGpuBase = idx => {
+    const n = idx > GEN_DESDE ? nota(idx, GPU_TOP)
+      : Math.max(nota(idx, GPU_TOP), Math.round(GEN_NOTA * Math.pow(Math.max(0, idx) / GEN_DESDE, 0.7)));
+    return gamaGpu({ idx }) === 'alta' ? Math.min(99, n + EXTRA_ALTA) : n;
+  };
+  GPUS.forEach(g => { if (g.nota == null) g.nota = notaGpuBase(g.idx); });
+  const notaGpu = g => g.nota, notaJuegos = c => nota(c.game, CPU_TOP), notaMulti = c => nota(c.multi, MULTI_TOP);
   const gamaCpu = c => (c.game >= 95 ? 'tope' : c.game >= 80 ? 'alta' : c.game >= 60 ? 'media' : 'baja');
   const gamaMulti = c => (c.multi >= 95 ? 'tope' : c.multi >= 70 ? 'alta' : c.multi >= 40 ? 'media' : 'baja');
 
