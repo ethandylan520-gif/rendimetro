@@ -6,9 +6,10 @@
   const GPU_TOP = Math.max(...GPUS.map(g => g.idx));
   const CPU_TOP = Math.max(...CPUS.map(c => c.game));
   const MULTI_TOP = Math.max(...CPUS.map(c => c.multi));
-  // Nota de 0 a 100 para mostrar: rendimiento real en porcentaje de la pieza más potente, que es el 100
-  // (RTX 4090 = 79, RTX 5070 = 47, RTX 4060 = 23). Una gráfica puede llevar su nota fijada a mano en data.js (nota: N).
-  const nota = (x, top) => Math.round(100 * Math.max(0, x) / top);
+  // Nota de 0 a 100 para mostrar: rendimiento real en porcentaje de la pieza más potente (que es el 100) y 3 puntos de regalo
+  // para el resto, sin pasar de 99 para que solo haya un 100 (RTX 4090 = 82, RTX 5070 = 50, RTX 4060 = 26).
+  // Una gráfica puede llevar su nota fijada a mano en data.js (nota: N).
+  const nota = (x, top) => (x >= top ? 100 : Math.min(99, Math.round(100 * Math.max(0, x) / top) + 3));
   GPUS.forEach(g => { if (g.nota == null) g.nota = nota(g.idx, GPU_TOP); });
   const notaGpu = g => g.nota, notaJuegos = c => nota(c.game, CPU_TOP), notaMulti = c => nota(c.multi, MULTI_TOP);
   // Gama de cada pieza (las de gráficas son las mismas que usa "Tu PC ideal").
