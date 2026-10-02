@@ -5,6 +5,16 @@
   const JUEGO = Object.fromEntries(JUEGOS.map(j => [j.id, j]));
   const GPU_TOP = Math.max(...GPUS.map(g => g.idx));
   const CPU_TOP = Math.max(...CPUS.map(c => c.game));
+  const MULTI_TOP = Math.max(...CPUS.map(c => c.multi));
+  // Nota de 0 a 100 para mostrar. La pieza más potente es el 100 y la curva es generosa con el resto:
+  // es una nota, no un porcentaje exacto de rendimiento (los % de los titulares y los FPS sí son los reales).
+  const nota = (x, top) => Math.round(100 * Math.pow(Math.max(0, x) / top, 0.4));
+  const notaGpu = g => nota(g.idx, GPU_TOP), notaJuegos = c => nota(c.game, CPU_TOP), notaMulti = c => nota(c.multi, MULTI_TOP);
+  // Gama de cada pieza (las de gráficas son las mismas que usa "Tu PC ideal").
+  const GAMA_TXT = { tope: 'Tope de gama', alta: 'Gama alta', media: 'Gama media', baja: 'Gama baja' };
+  const gamaGpu = g => (g.idx >= 95 ? 'tope' : g.idx >= 70 ? 'alta' : g.idx >= 40 ? 'media' : 'baja');
+  const gamaCpu = c => (c.game >= 95 ? 'tope' : c.game >= 80 ? 'alta' : c.game >= 60 ? 'media' : 'baja');
+  const gamaMulti = c => (c.multi >= 95 ? 'tope' : c.multi >= 70 ? 'alta' : c.multi >= 40 ? 'media' : 'baja');
 
   // gpu: escala de FPS respecto a 1440p. cpu: fracción del índice de gráfica que el procesador tiene que igualar.
   const RES = {
@@ -88,7 +98,7 @@
   }
 
   // hot: valor de gama alta (brilla y la aguja tiembla al llegar). badge: etiqueta como "GANA". delay: retraso del arranque en ms.
-  function gauge({ value, scale, label, sub = '', unit, color, read, zonas, hot, badge, delay, key, suspense }) {
+  function gauge({ value, scale, label, sub = '', unit, color, read, zonas, hot, badge, delay, key, suspense, maxTxt = '⚡ MÁXIMO', gama }) {
     const [max, pasos] = scale;
     const t = Math.max(0, Math.min(1, value / max));
     const ang = G_START + G_SWEEP * t;
@@ -123,7 +133,8 @@
     }
 
     const fx = hot ? ' hot' : color === 'bad' ? ' alerta' : '';
-    return `<figure class="gauge k-${color}${fx}${badge ? ' win' : ''}" data-t="${t.toFixed(4)}" data-n="${n}"${delay != null ? ` data-delay="${delay}"` : ''}${key ? ` data-key="${key}"` : ''}${suspense ? ' data-suspense="1"' : ''}>
+    const maximo = max === 100 && Math.round(value) >= 100;
+    return `<figure class="gauge k-${color}${fx}${badge ? ' win' : ''}" data-t="${t.toFixed(4)}" data-n="${n}"${delay != null ? ` data-delay="${delay}"` : ''}${key ? ` data-key="${key}"` : ''}${suspense ? ' data-suspense="1"' : ''}${maximo ? ' data-maximo="1"' : ''}>
       <svg viewBox="0 0 200 162" role="img" aria-label="${label}: ${n} ${unit}">
         ${bandas}
         <path d="${arco(80, G_START, G_START + G_SWEEP)}" class="g-track"/>
@@ -136,7 +147,8 @@
         <text x="100" y="155" class="g-unit">${unit}</text>
       </svg>
       ${badge ? `<span class="g-badge">${badge}</span>` : ''}
-      <figcaption><span class="g-label">${label}</span>${sub ? `<span class="g-sub">${sub}</span>` : ''}</figcaption>
+      ${maximo ? `<span class="max-chip">${maxTxt}</span>` : ''}
+      <figcaption><span class="g-label">${label}</span>${sub ? `<span class="g-sub">${sub}</span>` : ''}${gama ? `<span class="g-gama gama-${gama}">${GAMA_TXT[gama]}</span>` : ''}</figcaption>
     </figure>`;
   }
 
@@ -194,7 +206,27 @@
 
   // Avisa de que la aguja ha llegado a su valor (la compatibilidad lo usa para la revelación).
   // inmediato: no ha habido animación, así que no toca hacer efectos.
-  const avisarLlegada = (fig, inmediato) => fig.dispatchEvent(new CustomEvent('aterriza', { bubbles: true, detail: { inmediato } }));
+  function avisarLlegada(fig, inmediato) {
+    if (fig.dataset.maximo) {
+      fig.classList.add('maximo');
+      if (!inmediato && !sinMovimiento.matches) { reiniciarClase(fig, 'maximo-golpe'); estrellas(fig); }
+    }
+    fig.dispatchEvent(new CustomEvent('aterriza', { bubbles: true, detail: { inmediato } }));
+  }
+
+  // Lluvia de estrellas desde el centro de la rueda cuando llega al máximo.
+  function estrellas(fig) {
+    const colores = ['#ffe600', '#00e5ff', '#ff4fd8', '#ffffff'];
+    const caja = document.createElement('span');
+    caja.className = 'estrellas';
+    caja.setAttribute('aria-hidden', 'true');
+    caja.innerHTML = Array.from({ length: 16 }, (_, i) => {
+      const ang = (i / 16) * Math.PI * 2 + Math.random() * 0.3, dist = 55 + Math.random() * 60;
+      return `<i style="--dx:${fix(Math.cos(ang) * dist)}px;--dy:${fix(Math.sin(ang) * dist)}px;--col:${colores[i % colores.length]};--d:${Math.round(Math.random() * 150)}ms">✦</i>`;
+    }).join('');
+    fig.appendChild(caja);
+    setTimeout(() => caja.remove(), 1500);
+  }
 
   function moverAguja(fig, key, como, orden) {
     const t1 = Number(fig.dataset.t), n1 = Number(fig.dataset.n);
@@ -209,10 +241,12 @@
     if (!arranque && Math.abs(t0 - t1) < 0.002 && Math.round(n0) === n1) { avisarLlegada(fig, true); return; }
     const efectos = como !== 'arrastre';
     if (efectos) {
-      fig.classList.remove('landed');
+      fig.classList.remove('landed', 'maximo', 'maximo-golpe');
       fig.classList.add('anim');
     }
-    const pintar = (t, n) => { ponerAguja(fig, t, n); estado.t = t; estado.n = n; };
+    // El rebote puede pasarse un poco, pero el número nunca enseña más que el máximo de la escala (nada de "101 / 100").
+    const techo = t1 > 0 ? Math.max(n1 / t1, n1) : Infinity;
+    const pintar = (t, n) => { n = Math.min(n, techo); ponerAguja(fig, t, n); estado.t = t; estado.n = n; };
     pintar(t0, n0);
 
     // suspense: la aguja tiembla y los números bailan como una tragaperras antes de revelar el valor.
@@ -418,21 +452,20 @@
         ? `<strong>${a.name}</strong> y <strong>${b.name}</strong> rinden prácticamente igual.`
         : `<strong>${w.name}</strong> rinde un <strong class="hl-gpu"><span data-cuenta="${d}">${d}</span>% más</strong> que ${l.name}.`;
     }
-    const scale = escala(Math.max(a.idx, b.idx) * 1.08, ESC_PTS);
     const eff = g => Math.round(g.idx / g.tdp * 1000) / 10;
     // Suspense: las dos agujas tiemblan en blanco y el resultado se oculta hasta que aterrizan (ver ejecutar y decidirDuelo).
     mostrar($('gpuResult'), `
       <p class="headline">${head}</p>
       <div class="gauges duelo cargando">
-        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu', hot: a.idx >= 95, badge: gana === a ? 'GANA' : '', key: 'a', suspense: true })}
-        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b', hot: b.idx >= 95, badge: gana === b ? 'GANA' : '', key: 'b', suspense: true })}
+        ${gauge({ value: notaGpu(a), scale: [100, 5], label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: '/ 100', color: 'gpu', hot: a.idx >= 95, badge: gana === a ? 'GANA' : '', key: 'a', suspense: true, gama: gamaGpu(a) })}
+        ${gauge({ value: notaGpu(b), scale: [100, 5], label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: '/ 100', color: 'gpu-b', hot: b.idx >= 95, badge: gana === b ? 'GANA' : '', key: 'b', suspense: true, gama: gamaGpu(b) })}
         <span class="vs" aria-hidden="true">VS</span>
         <span class="sello-duelo" aria-hidden="true"></span>
       </div>
       <div class="table-wrap"><table class="specs">
         <thead><tr><th></th><th>${a.name}</th><th>${b.name}</th></tr></thead>
         <tbody>
-          ${specRow('Rendimiento', { num: a.idx, txt: `${a.idx} pts` }, { num: b.idx, txt: `${b.idx} pts` }, 'high')}
+          ${specRow('Nota', { num: a.idx, txt: `${notaGpu(a)} / 100` }, { num: b.idx, txt: `${notaGpu(b)} / 100` }, 'high')}
           ${specRow('Memoria (VRAM)', { num: a.vram, txt: `${a.vram} GB` }, { num: b.vram, txt: `${b.vram} GB` }, 'high')}
           ${specRow('Consumo', { num: a.tdp, txt: `${a.tdp} W` }, { num: b.tdp, txt: `${b.tdp} W` }, 'low')}
           ${specRow('Eficiencia', { num: eff(a), txt: `${eff(a)} pts / 100 W` }, { num: eff(b), txt: `${eff(b)} pts / 100 W` }, 'high')}
@@ -473,8 +506,6 @@
         ? 'En productividad (edición de vídeo, streaming, renderizado) van a la par.'
         : `En productividad (edición de vídeo, streaming, renderizado) gana el ${mw.name} por un <span data-cuenta="${dm}">${dm}</span>%.`;
     }
-    const scaleG = escala(Math.max(a.game, b.game) * 1.08, ESC_PTS);
-    const scaleM = escala(Math.max(a.multi, b.multi) * 1.08, ESC_PTS);
     const plataforma = a.socket === b.socket
       ? `<p class="note">Los dos usan la plataforma ${a.socket}: puedes cambiar uno por otro sin cambiar de placa base (a veces hace falta actualizar la BIOS).</p>`
       : '';
@@ -484,14 +515,14 @@
       ${sub ? `<p class="subline">${sub}</p>` : ''}
       <div class="duelos">
         <div class="gauges duelo cargando">
-          ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu', hot: a.game >= 88, badge: badgeJ(a), key: 'aj', suspense: true })}
-          ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b', hot: b.game >= 88, badge: badgeJ(b), key: 'bj', suspense: true })}
+          ${gauge({ value: notaJuegos(a), scale: [100, 5], label: a.name, sub: 'Juegos', unit: '/ 100', color: 'cpu', hot: a.game >= 88, badge: badgeJ(a), key: 'aj', suspense: true, gama: gamaCpu(a) })}
+          ${gauge({ value: notaJuegos(b), scale: [100, 5], label: b.name, sub: 'Juegos', unit: '/ 100', color: 'cpu-b', hot: b.game >= 88, badge: badgeJ(b), key: 'bj', suspense: true, gama: gamaCpu(b) })}
           <span class="vs" aria-hidden="true">VS</span>
           <span class="sello-duelo" aria-hidden="true"></span>
         </div>
         <div class="gauges duelo cargando">
-          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Productividad', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a), key: 'am', suspense: true })}
-          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Productividad', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b), key: 'bm', suspense: true })}
+          ${gauge({ value: notaMulti(a), scale: [100, 5], label: a.name, sub: 'Productividad', unit: '/ 100', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a), key: 'am', suspense: true, gama: gamaMulti(a) })}
+          ${gauge({ value: notaMulti(b), scale: [100, 5], label: b.name, sub: 'Productividad', unit: '/ 100', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b), key: 'bm', suspense: true, gama: gamaMulti(b) })}
           <span class="vs" aria-hidden="true">VS</span>
           <span class="sello-duelo" aria-hidden="true"></span>
         </div>
@@ -533,10 +564,10 @@
     const g = GPU[$('bnGpu').value], c = CPU[$('bnCpu').value], r = $('bnRes').value;
     if (!g || !c) {
       const potGpu = g
-        ? gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, key: 'gpu' })
+        ? gauge({ value: notaGpu(g), scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, key: 'gpu', gama: gamaGpu(g) })
         : gaugeVacio('Elige tu gráfica');
       const potCpu = c
-        ? gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, key: 'cpu' })
+        ? gauge({ value: notaJuegos(c), scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, key: 'cpu', gama: gamaCpu(c) })
         : gaugeVacio('Elige tu procesador');
       mostrar($('bnResult'), `
         <p class="headline vacio-hint">${g || c ? `Ahora elige tu ${g ? 'procesador' : 'gráfica'}…` : 'Elige tu gráfica y tu procesador para ver si se llevan bien'}</p>
@@ -589,7 +620,8 @@
     }).join('');
 
     // Puntuación de compatibilidad: lo que el procesador aprovecha de la gráfica, menos lo que se pierde por PCIe o Resizable BAR.
-    let puntos = feed * 100;
+    // Curva generosa: un cuello leve apenas resta; solo las parejas muy descompensadas bajan de 60.
+    let puntos = 100 * Math.pow(feed, 0.6);
     const compat = [{ ok: true, txt: `Encajan: la ${g.name} va en cualquier placa con ranura PCIe x16, así que puedes montarla con el ${c.name}.` }];
     if (g.x8 && c.pcie3) {
       puntos -= 8;
@@ -611,11 +643,11 @@
     const SELLO = { ok: '¡PAREJA PERFECTA!', warn: '¡BUENA PAREJA!', orange: 'PAREJA MEJORABLE', bad: '¡NO PEGAN!' };
     mostrar($('bnResult'), `
       <div class="gauges trio cargando" data-tono="${compatTono}">
-        ${gauge({ value: g.idx / GPU_TOP * 100, scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, delay: 0, key: 'gpu' })}
+        ${gauge({ value: notaGpu(g), scale: [100, 5], label: 'Potencia gráfica', sub: g.name, unit: '/ 100', color: 'gpu', hot: g.idx >= 95, delay: 0, key: 'gpu', gama: gamaGpu(g) })}
         <span class="rayo rayo-izq" aria-hidden="true"></span>
-        ${gauge({ value: puntos, scale: [100, 5], label: 'Compatibilidad', sub: `<b class="t-${compatTono}">${compatNota}</b>`, unit: '%', color: compatTono, hot: puntos >= 95, delay: 550, key: 'compat', suspense: true })}
+        ${gauge({ value: puntos, scale: [100, 5], label: 'Compatibilidad', sub: `<b class="t-${compatTono}">${compatNota}</b>`, unit: '%', color: compatTono, hot: puntos >= 95, delay: 550, key: 'compat', suspense: true, maxTxt: '⚡ 100% PERFECTA' })}
         <span class="rayo rayo-der" aria-hidden="true"></span>
-        ${gauge({ value: c.game / CPU_TOP * 100, scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, delay: 180, key: 'cpu' })}
+        ${gauge({ value: notaJuegos(c), scale: [100, 5], label: 'Potencia procesador', sub: c.name, unit: '/ 100', color: 'cpu', hot: c.game >= 88, delay: 180, key: 'cpu', gama: gamaCpu(c) })}
         <span class="sello-grande t-${compatTono}" aria-hidden="true">${SELLO[compatTono]}</span>
       </div>
       <h3 class="bars-title">Compatibilidad</h3>
@@ -1069,13 +1101,13 @@
     if (cat.id === 'gpu') {
       return [...GPUS].sort((a, b) => orden(a, b) || b.idx - a.idx).map(g => ({
         k: 'gpu', marca: g.brand, name: g.name, sub: `${g.vram} GB · ${g.tdp} W · ${g.year}`,
-        barra: g.idx / GPU_TOP, puntos: `${g.idx} pts`, precio: g.precio, q: qGpu(g), antigua: !g.buy, gpu: g
+        barra: notaGpu(g) / 100, puntos: `${notaGpu(g)} / 100`, precio: g.precio, q: qGpu(g), antigua: !g.buy, gpu: g
       }));
     }
     if (cat.id === 'cpu') {
       return [...CPUS].sort((a, b) => orden(a, b) || b.game - a.game).map(c => ({
         k: 'cpu', marca: c.brand, name: c.name, sub: `${c.cores} núcleos · ${c.threads} hilos · ${c.socket}`,
-        barra: c.game / CPU_TOP, puntos: `${c.game} pts juegos`, precio: c.precio, q: qCpu(c), antigua: !c.buy, cpu: c
+        barra: notaJuegos(c) / 100, puntos: `${notaJuegos(c)} / 100 juegos`, precio: c.precio, q: qCpu(c), antigua: !c.buy, cpu: c
       }));
     }
     return cat.items.map(x => ({ k: 'info', marca: cat.nombre, ...x }));
@@ -1111,7 +1143,7 @@
 
   function fichaGpu(g) {
     const filas = [
-      fila('Rendimiento', `${g.idx} pts <small>(RTX 4090 = 100)</small>`),
+      fila('Nota', `${notaGpu(g)} / 100 <small>(la gráfica más potente es el 100)</small>`),
       fila('Memoria (VRAM)', `${g.vram} GB`),
       fila('Consumo', `${g.tdp} W`),
       fila('Fuente recomendada', `${fuentePara(g, { w: 120 }).w} W 80 Plus Gold`),
@@ -1130,7 +1162,7 @@
     }).join('');
     return {
       k: 'gpu', id: g.id, marca: g.brand, nombre: g.name, antigua: !g.buy, q: qGpu(g), filas,
-      gauge: gauge({ value: g.idx, scale: escala(GPU_TOP * 1.08, ESC_PTS), label: 'Rendimiento', unit: 'PTS', color: 'gpu', hot: g.idx >= 95 }),
+      gauge: gauge({ value: notaGpu(g), scale: [100, 5], label: 'Nota', unit: '/ 100', color: 'gpu', hot: g.idx >= 95, gama: gamaGpu(g) }),
       extra: `<h4 class="ficha-sub">FPS orientativos <small>con un ${CPU_REF.name}</small></h4><ul class="ficha-lista">${fps}</ul>`,
       acciones: [['gpu', 'gpuA', 'Comparar'], ['fps', 'fpsGpu', 'FPS en más juegos']]
     };
@@ -1139,8 +1171,8 @@
   function fichaCpu(c) {
     const plat = PIEZAS.plataformas[c.socket];
     const filas = [
-      fila('Juegos', `${c.game} pts <small>(${CPU_REF.name} = 100)</small>`),
-      fila('Productividad', `${c.multi} pts <small>(Ryzen 9 9950X = 100)</small>`),
+      fila('Juegos', `${notaJuegos(c)} / 100 <small>(el más potente es el 100)</small>`),
+      fila('Productividad', `${notaMulti(c)} / 100`),
       fila('Núcleos / hilos', `${c.cores} / ${c.threads}`),
       fila('Plataforma', `${c.socket}${plat ? ` <small>· ${plat.chipset.replace('Placa base', 'placa')} o superior</small>` : ''}`),
       fila('Memoria', MEMORIA[c.socket] || '—')
@@ -1157,7 +1189,7 @@
     }).join('');
     return {
       k: 'cpu', id: c.id, marca: c.brand, nombre: c.name, antigua: !c.buy, q: qCpu(c), filas,
-      gauge: gauge({ value: c.game, scale: escala(CPU_TOP * 1.08, ESC_PTS), label: 'Juegos', unit: 'PTS', color: 'cpu', hot: c.game >= 88 }),
+      gauge: gauge({ value: notaJuegos(c), scale: [100, 5], label: 'Juegos', unit: '/ 100', color: 'cpu', hot: c.game >= 88, gama: gamaCpu(c) }),
       extra: `<h4 class="ficha-sub">Gráficas que aprovecha sin cuello de botella</h4><ul class="ficha-lista">${aprovecha}</ul>`,
       acciones: [['cpu', 'cpuA', 'Comparar'], ['cuello', 'bnCpu', 'Compatibilidad']]
     };

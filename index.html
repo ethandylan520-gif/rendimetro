@@ -341,6 +341,63 @@
   /* Mientras dura el suspense no se ve quién gana: el resto del resultado aparece al revelar */
   .result > * { transition: opacity .4s ease; }
   .result.suspense > :not(.duelo):not(.duelos) { opacity: 0; pointer-events: none; }
+
+  /* Gama de cada pieza, debajo de la rueda */
+  .g-gama {
+    align-self: center; margin-top: 4px; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor;
+    font: 700 .68rem 'Chakra Petch', sans-serif; letter-spacing: 1px; text-transform: uppercase; transition: opacity .4s;
+  }
+  .gama-baja { color: var(--muted); }
+  .gama-media { color: var(--ok); }
+  .gama-alta { color: var(--info); }
+  .gama-tope { color: var(--ink); border-color: transparent; background: linear-gradient(90deg, #ffe600, #ff4fd8, #00e5ff); }
+  .gauges.duelo.cargando .g-gama { opacity: 0; }
+  .gauges.trio .g-gama { font-size: .56rem; padding: 1px 6px; letter-spacing: .3px; white-space: nowrap; }
+
+  /* Modo MÁXIMO: cuando una rueda llega a 100 */
+  @property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+  .gauge.maximo.maximo[data-maximo] {
+    border-color: transparent;
+    background:
+      radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--c) 14%, #171331) 0%, var(--bg) 72%) padding-box,
+      conic-gradient(from var(--ang), #00e5ff, #ff4fd8, #ffe600, #3dff8f, #00e5ff) border-box;
+    box-shadow: 0 0 34px -8px rgba(255, 230, 0, .5), 0 0 46px -12px rgba(0, 229, 255, .55);
+    animation: borde-max 3s linear infinite;
+  }
+  @keyframes borde-max { to { --ang: 360deg; } }
+  .gauge.maximo .g-value { animation: arco-max 2.6s linear infinite; }
+  @keyframes arco-max { from { filter: drop-shadow(0 0 6px var(--c)) hue-rotate(0deg); } to { filter: drop-shadow(0 0 6px var(--c)) hue-rotate(360deg); } }
+  .gauge.maximo.maximo .g-read { animation: num-max 1.6s ease-in-out infinite; }
+  @keyframes num-max { 50% { fill: #ffe600; } }
+  .max-chip {
+    position: absolute; top: 10px; left: 10px; z-index: 2; opacity: 0;
+    font: 700 .7rem 'Chakra Petch', sans-serif; letter-spacing: 1px; line-height: 1.4; color: var(--ink);
+    padding: 3px 9px; border-radius: 20px; background: linear-gradient(90deg, #ffe600, #ff4fd8, #00e5ff, #ffe600); background-size: 300% 100%;
+    box-shadow: 0 0 16px rgba(255, 230, 0, .45);
+  }
+  .gauge.maximo .max-chip { opacity: 1; animation: chip-max 2.4s linear infinite; }
+  .gauge.maximo-golpe .max-chip { animation: sello .55s cubic-bezier(.2, 1.6, .4, 1) both, chip-max 2.4s linear infinite; }
+  @keyframes chip-max { to { background-position: 300% 0; } }
+  .gauge.maximo-golpe::before {
+    content: ""; position: absolute; left: 50%; top: 44%; z-index: 2; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+    border-radius: 50%; border: 3px solid #ffe600; box-shadow: 0 0 24px #ffe600, inset 0 0 14px #00e5ff;
+    pointer-events: none; animation: anillo-max 1s ease-out forwards;
+  }
+  @keyframes anillo-max { from { opacity: 1; transform: scale(.4); } to { opacity: 0; transform: scale(6); } }
+  .estrellas { position: absolute; left: 50%; top: 44%; z-index: 3; pointer-events: none; }
+  .estrellas i {
+    position: absolute; font-style: normal; font-size: 14px; color: var(--col); text-shadow: 0 0 8px var(--col);
+    opacity: 0; animation: estrella 1.1s cubic-bezier(.15, .8, .3, 1) var(--d) forwards;
+  }
+  @keyframes estrella {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(.3) rotate(0deg); }
+    70% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(var(--dx) - 50%), calc(var(--dy) - 50%)) scale(1.2) rotate(180deg); }
+  }
+  @media (max-width: 640px) {
+    .max-chip { top: 6px; left: 6px; font-size: .58rem; padding: 2px 6px; }
+    .g-gama { font-size: .6rem; padding: 1px 7px; }
+  }
   @keyframes onda { 0% { opacity: .8; transform: scale(1); } 100% { opacity: 0; transform: scale(1.7); } }
 
   /* Velocímetros: --c es el color de cada uno (brillo, marcas encendidas, chispas). */
@@ -915,8 +972,8 @@
     <div class="cards">
       <div class="card">
         <span class="num">01 · ÍNDICE PROPIO</span>
-        <h3>Una puntuación para cada pieza</h3>
-        <p>Cada gráfica y procesador tiene una puntuación propia a partir de pruebas públicas en juegos. La RTX 4090 vale 100 en gráficas y el Ryzen 7 9800X3D vale 100 en procesadores.</p>
+        <h3>Una nota para cada pieza</h3>
+        <p>Cada gráfica y procesador tiene una nota de 0 a 100 calculada a partir de pruebas públicas en juegos: la pieza más potente del momento marca el 100. Con ella sacamos también su gama: baja, media, alta o tope de gama.</p>
       </div>
       <div class="card">
         <span class="num">02 · COMPATIBILIDAD</span>
@@ -996,8 +1053,8 @@
   </div>
 </div>
 
-<script src="js/config.js?v=202610021832"></script>
-<script src="js/data.js?v=202610021832"></script>
-<script src="js/app.js?v=202610021832"></script>
+<script src="js/config.js?v=202610021842"></script>
+<script src="js/data.js?v=202610021842"></script>
+<script src="js/app.js?v=202610021842"></script>
 </body>
 </html>
