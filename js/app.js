@@ -68,8 +68,6 @@
     return `<a class="amz amz-${kind}" href="${amazonUrl(query)}" target="_blank" rel="sponsored noopener">Ver ${item.name} en Amazon</a>`;
   }
 
-  const affNote = '<p class="aff-note">Enlaces de afiliado: si compras a través de ellos, esta web recibe una pequeña comisión sin coste extra para ti.</p>';
-
   // ---------- Velocímetro ----------
   const G_START = -125, G_SWEEP = 250;
   const ESC_PTS = [[20, 4], [40, 4], [60, 6], [80, 4], [100, 5], [120, 6], [140, 7]];
@@ -143,14 +141,15 @@
   }
 
   // Rueda vacía, con un "?", mientras falta elegir la pieza.
-  function gaugeVacio(label) {
+  // extra: clases para la rueda "lista" (pieza ya elegida, esperando a su rival sin girar).
+  function gaugeVacio(label, extra = '') {
     let marcas = '';
     for (let i = 0; i <= 20; i++) {
       const deg = G_START + G_SWEEP * i / 20;
       const [x1, y1] = polar(i % 4 === 0 ? 60 : 64, deg), [x2, y2] = polar(70, deg);
       marcas += `<line x1="${fix(x1)}" y1="${fix(y1)}" x2="${fix(x2)}" y2="${fix(y2)}" class="${i % 4 === 0 ? 'tk-major' : 'tk'}"/>`;
     }
-    return `<figure class="gauge vacio">
+    return `<figure class="gauge vacio${extra ? ` ${extra}` : ''}">
       <svg viewBox="0 0 200 162" aria-hidden="true">
         <path d="${arco(80, G_START, G_START + G_SWEEP)}" class="g-track"/>
         ${marcas}
@@ -293,6 +292,8 @@
       [...el.children].forEach((c, i) => c.style.setProperty('--i', i));
       reiniciarClase(el, como === 'arranque' ? 'reveal' : 'reveal-suave');
     }
+    // En los duelos, el resultado se oculta solo mientras la animación está en marcha (decidirDuelo lo vuelve a mostrar).
+    if (como !== 'quieto' && !sinMovimiento.matches && el.querySelector('.duelo .gauge[data-suspense]')) el.classList.add('suspense');
     el.querySelectorAll('.gauge[data-t]').forEach((fig, i) => {
       fig.style.setProperty('--g', i);
       moverAguja(fig, clave(el, fig, i), como, i);
@@ -322,6 +323,17 @@
   // Cada aguja se identifica por su lado (data-key) para que, al elegir la otra pieza, no herede la posición de otra.
   const clave = (el, fig, i) => `${el.id}:${fig.dataset.key || i}`;
 
+  // Olvida dónde se quedaron esas agujas: la próxima vez arrancan desde cero, con la revelación completa.
+  function enReposo(el, keys) {
+    keys.forEach(k => {
+      const key = `${el.id}:${k}`;
+      cancelAnimationFrame(agujas.get(key)?.raf);
+      clearTimeout(agujas.get(key)?.seguro);
+      agujas.delete(key);
+    });
+    el.classList.remove('suspense');
+  }
+
   function animar(el, como) {
     const primera = el.querySelector('.gauge[data-t]');
     if (sinMovimiento.matches || como === 'quieto' || !primera || aLaVista(primera)) {
@@ -329,6 +341,7 @@
       return;
     }
     // Fuera de pantalla: dejamos las agujas a cero y arrancan cuando el usuario llega hasta ellas.
+    el.classList.remove('suspense');
     const previa = esperando.get(el);
     if (previa) vigia.unobserve(previa);
     el.querySelectorAll('.gauge[data-t]').forEach((fig, i) => {
@@ -386,14 +399,12 @@
   function renderGpu() {
     const a = GPU[$('gpuA').value], b = GPU[$('gpuB').value];
     if (!a || !b) {
-      // Falta alguna: la que ya está elegida arranca su rueda y la otra espera con un "?".
-      const scale = escala(Math.max(a?.idx || 0, b?.idx || 0, 60) * 1.08, ESC_PTS);
-      const lado = (g, key, color) => (g
-        ? gauge({ value: g.idx, scale, label: g.name, sub: `${g.vram} GB · ${g.tdp} W`, unit: 'PTS', color, hot: g.idx >= 95, key })
-        : gaugeVacio('Elige una gráfica'));
+      // Falta alguna: nada gira hasta tener las dos. La que ya está elegida espera "lista" con su nombre.
+      enReposo($('gpuResult'), ['a', 'b']);
+      const lado = (g, color) => (g ? gaugeVacio(g.name, `listo k-${color}`) : gaugeVacio('Elige una gráfica'));
       mostrar($('gpuResult'), `
         <p class="headline vacio-hint">${a || b ? 'Ahora elige su rival…' : 'Elige dos gráficas y que empiece la batalla'}</p>
-        <div class="gauges duelo">${lado(a, 'a', 'gpu')}${lado(b, 'b', 'gpu-b')}<span class="vs" aria-hidden="true">VS</span></div>`);
+        <div class="gauges duelo">${lado(a, 'gpu')}${lado(b, 'gpu-b')}<span class="vs" aria-hidden="true">VS</span></div>`);
       return;
     }
     let head, gana = null;
@@ -409,12 +420,14 @@
     }
     const scale = escala(Math.max(a.idx, b.idx) * 1.08, ESC_PTS);
     const eff = g => Math.round(g.idx / g.tdp * 1000) / 10;
+    // Suspense: las dos agujas tiemblan en blanco y el resultado se oculta hasta que aterrizan (ver ejecutar y decidirDuelo).
     mostrar($('gpuResult'), `
       <p class="headline">${head}</p>
-      <div class="gauges duelo">
-        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu', hot: a.idx >= 95, badge: gana === a ? 'GANA' : '', key: 'a' })}
-        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b', hot: b.idx >= 95, badge: gana === b ? 'GANA' : '', key: 'b' })}
+      <div class="gauges duelo cargando">
+        ${gauge({ value: a.idx, scale, label: a.name, sub: `${a.vram} GB · ${a.tdp} W`, unit: 'PTS', color: 'gpu', hot: a.idx >= 95, badge: gana === a ? 'GANA' : '', key: 'a', suspense: true })}
+        ${gauge({ value: b.idx, scale, label: b.name, sub: `${b.vram} GB · ${b.tdp} W`, unit: 'PTS', color: 'gpu-b', hot: b.idx >= 95, badge: gana === b ? 'GANA' : '', key: 'b', suspense: true })}
         <span class="vs" aria-hidden="true">VS</span>
+        <span class="sello-duelo" aria-hidden="true"></span>
       </div>
       <div class="table-wrap"><table class="specs">
         <thead><tr><th></th><th>${a.name}</th><th>${b.name}</th></tr></thead>
@@ -426,24 +439,20 @@
           ${specRow('Lanzamiento', { num: a.year, txt: a.year }, { num: b.year, txt: b.year }, null)}
         </tbody>
       </table></div>
-      <div class="buy">${buyLink(a, 'gpu')}${a !== b ? buyLink(b, 'gpu') : ''}</div>
-      ${affNote}`);
+      <div class="buy">${buyLink(a, 'gpu')}${a !== b ? buyLink(b, 'gpu') : ''}</div>`);
   }
 
   // ---------- Procesador vs procesador ----------
   function renderCpu() {
     const a = CPU[$('cpuA').value], b = CPU[$('cpuB').value];
     if (!a || !b) {
-      const scaleG = escala(Math.max(a?.game || 0, b?.game || 0, 60) * 1.08, ESC_PTS);
-      const scaleM = escala(Math.max(a?.multi || 0, b?.multi || 0, 60) * 1.08, ESC_PTS);
-      const lado = (c, campo, scale, sub, key, color) => (c
-        ? gauge({ value: c[campo], scale, label: c.name, sub, unit: 'PTS', color, hot: c[campo] >= (campo === 'game' ? 88 : 90), key })
-        : gaugeVacio('Elige un procesador'));
+      enReposo($('cpuResult'), ['aj', 'bj', 'am', 'bm']);
+      const lado = (c, color) => (c ? gaugeVacio(c.name, `listo k-${color}`) : gaugeVacio('Elige un procesador'));
       mostrar($('cpuResult'), `
         <p class="headline vacio-hint">${a || b ? 'Ahora elige su rival…' : 'Elige dos procesadores y que empiece la batalla'}</p>
         <div class="duelos">
-          <div class="gauges duelo">${lado(a, 'game', scaleG, 'Juegos', 'aj', 'cpu')}${lado(b, 'game', scaleG, 'Juegos', 'bj', 'cpu-b')}<span class="vs" aria-hidden="true">VS</span></div>
-          <div class="gauges duelo">${lado(a, 'multi', scaleM, 'Productividad', 'am', 'cpu')}${lado(b, 'multi', scaleM, 'Productividad', 'bm', 'cpu-b')}<span class="vs" aria-hidden="true">VS</span></div>
+          <div class="gauges duelo">${lado(a, 'cpu')}${lado(b, 'cpu-b')}<span class="vs" aria-hidden="true">VS</span></div>
+          <div class="gauges duelo">${lado(a, 'cpu')}${lado(b, 'cpu-b')}<span class="vs" aria-hidden="true">VS</span></div>
         </div>`);
       return;
     }
@@ -474,15 +483,17 @@
       <p class="headline">${head}</p>
       ${sub ? `<p class="subline">${sub}</p>` : ''}
       <div class="duelos">
-        <div class="gauges duelo">
-          ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu', hot: a.game >= 88, badge: badgeJ(a), key: 'aj' })}
-          ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b', hot: b.game >= 88, badge: badgeJ(b), key: 'bj' })}
+        <div class="gauges duelo cargando">
+          ${gauge({ value: a.game, scale: scaleG, label: a.name, sub: 'Juegos', unit: 'PTS', color: 'cpu', hot: a.game >= 88, badge: badgeJ(a), key: 'aj', suspense: true })}
+          ${gauge({ value: b.game, scale: scaleG, label: b.name, sub: 'Juegos', unit: 'PTS', color: 'cpu-b', hot: b.game >= 88, badge: badgeJ(b), key: 'bj', suspense: true })}
           <span class="vs" aria-hidden="true">VS</span>
+          <span class="sello-duelo" aria-hidden="true"></span>
         </div>
-        <div class="gauges duelo">
-          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Productividad', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a), key: 'am' })}
-          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Productividad', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b), key: 'bm' })}
+        <div class="gauges duelo cargando">
+          ${gauge({ value: a.multi, scale: scaleM, label: a.name, sub: 'Productividad', unit: 'PTS', color: 'cpu', hot: a.multi >= 90, badge: badgeM(a), key: 'am', suspense: true })}
+          ${gauge({ value: b.multi, scale: scaleM, label: b.name, sub: 'Productividad', unit: 'PTS', color: 'cpu-b', hot: b.multi >= 90, badge: badgeM(b), key: 'bm', suspense: true })}
           <span class="vs" aria-hidden="true">VS</span>
+          <span class="sello-duelo" aria-hidden="true"></span>
         </div>
       </div>
       <div class="table-wrap"><table class="specs cpu-specs">
@@ -494,8 +505,7 @@
         </tbody>
       </table></div>
       ${plataforma}
-      <div class="buy">${buyLink(a, 'cpu')}${a !== b ? buyLink(b, 'cpu') : ''}</div>
-      ${affNote}`);
+      <div class="buy">${buyLink(a, 'cpu')}${a !== b ? buyLink(b, 'cpu') : ''}</div>`);
   }
 
   // ---------- Cuello de botella ----------
@@ -616,8 +626,7 @@
       <ul class="res-list">${porRes}</ul>
       <p class="note">A más resolución, más trabaja la gráfica y menos importa el procesador.</p>
       ${extra}
-      <div class="buy">${buyLink(g, 'gpu')}${buyLink(c, 'cpu')}</div>
-      ${affNote}`);
+      <div class="buy">${buyLink(g, 'gpu')}${buyLink(c, 'cpu')}</div>`);
   }
 
   // ---------- FPS por juego ----------
@@ -714,8 +723,7 @@
       <div class="gauges four">${table}</div>
       ${notaGenerico('fpsGame', j)}${vram}${cap}${rec}
       <div class="buy">${buyLink(g, 'gpu')}${buyLink(c, 'cpu')}</div>
-      <p class="aff-note">Estimación orientativa sin DLSS/FSR ni generación de fotogramas: con reescalado puedes ganar bastante más.</p>
-      ${affNote}`);
+      <p class="aff-note">Estimación orientativa sin DLSS/FSR ni generación de fotogramas: con reescalado puedes ganar bastante más.</p>`);
   }
 
   // ---------- Tu PC ideal ----------
@@ -936,8 +944,7 @@
       </div>
       ${notas}
       ${bloqueMejoras}
-      <p class="aff-note">Precios orientativos del mercado español, revisados el 1 de octubre de 2026: el precio real puede variar, consúltalo en Amazon. No incluye monitor, periféricos ni sistema operativo. FPS estimados sin DLSS/FSR.</p>
-      ${affNote}`);
+      <p class="aff-note">Precios orientativos del mercado español, revisados el 1 de octubre de 2026: el precio real puede variar, consúltalo en Amazon. No incluye monitor, periféricos ni sistema operativo. FPS estimados sin DLSS/FSR.</p>`);
   }
 
   // ---------- Buscador de juegos ----------
@@ -1193,7 +1200,7 @@
         <a class="item-buy" href="${amazonUrl(f.q)}" target="_blank" rel="sponsored noopener">Ver en Amazon</a>
         ${(f.acciones || []).map(([tab, sel, txt]) => `<button type="button" class="item-det" data-tab="${tab}" data-sel="${sel}" data-id="${f.id}">${txt}</button>`).join('')}
       </div>
-      <p class="aff-note">Datos y precios orientativos. Enlace de afiliado: si compras a través de él, esta web recibe una pequeña comisión sin coste extra para ti.</p>`;
+      <p class="aff-note">Datos y precios orientativos.</p>`;
     dialogo.showModal();
     animar($('fichaBody'), 'arranque');
   }
@@ -1267,10 +1274,11 @@
   });
 
   // ---------- Revelación de la compatibilidad ----------
-  function confeti(cont) {
+  function confeti(cont, x = '50%') {
     const colores = ['var(--gpu)', 'var(--cpu)', 'var(--ok)', 'var(--warn)', 'var(--info)'];
     const caja = document.createElement('span');
     caja.className = 'confeti';
+    caja.style.left = x;
     caja.setAttribute('aria-hidden', 'true');
     caja.innerHTML = Array.from({ length: 18 }, (_, i) => {
       const ang = Math.random() * Math.PI * 2, dist = 50 + Math.random() * 100;
@@ -1291,6 +1299,31 @@
     if (trio.dataset.tono === 'ok') confeti(trio);
     if (trio.dataset.tono === 'bad') reiniciarClase(trio, 'roto');
   });
+
+  // ---------- Revelación de los duelos (gráficas y procesadores) ----------
+  // Cuando aterrizan las dos agujas de un duelo: se tiñen, choca el VS, cae el sello "¡GANA!" sobre la ganadora
+  // (o "¡EMPATE!") con confeti, la perdedora se apaga y aparece el resultado que estaba oculto.
+  function decidirDuelo(e) {
+    const fig = e.target, duelo = fig.closest('.duelo');
+    if (!duelo || !fig.dataset.suspense) return;
+    fig.dataset.llego = '1';
+    const figs = [...duelo.querySelectorAll('.gauge[data-t]')];
+    if (!figs.every(f => f.dataset.llego)) return;
+    duelo.classList.remove('cargando');
+    duelo.classList.add('decidido');
+    const gana = figs.findIndex(f => f.classList.contains('win'));
+    figs.forEach((f, i) => f.classList.toggle('pierde', gana >= 0 && i !== gana));
+    const res = duelo.closest('.result');
+    if ([...res.querySelectorAll('.duelo')].every(d => d.classList.contains('decidido'))) res.classList.remove('suspense');
+    if (e.detail.inmediato || sinMovimiento.matches) return;
+    const sello = duelo.querySelector('.sello-duelo');
+    sello.textContent = gana >= 0 ? '¡GANA!' : '¡EMPATE!';
+    sello.className = `sello-duelo ${gana === 0 ? 'izq' : gana === 1 ? 'der' : 'centro'}`;
+    reiniciarClase(duelo, 'golpe');
+    if (gana >= 0) confeti(duelo, gana === 0 ? '25%' : '75%');
+  }
+  $('gpuResult').addEventListener('aterriza', decidirDuelo);
+  $('cpuResult').addEventListener('aterriza', decidirDuelo);
 
   // ---------- Cookies ----------
   // Las cookies de análisis solo se activan si el visitante acepta. Su elección se guarda en su navegador.
