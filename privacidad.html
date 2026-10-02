@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacidad y cookies — FPS Battle</title>
-<meta name="description" content="Cómo trata FPS Battle tu privacidad: no pedimos datos, no usamos cookies y los enlaces a Amazon son de afiliado.">
+<meta name="description" content="Cómo trata FPS Battle tu privacidad: no pedimos datos, las cookies de análisis son opcionales y los enlaces a Amazon son de afiliado.">
 <meta name="theme-color" content="#0a0816">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0816'/%3E%3Crect x='6' y='18' width='5' height='8' rx='1.5' fill='%2300e5ff'/%3E%3Crect x='13.5' y='12' width='5' height='14' rx='1.5' fill='%2300e5ff'/%3E%3Crect x='21' y='6' width='5' height='20' rx='1.5' fill='%23ff4fd8'/%3E%3C/svg%3E">
 <style>
@@ -41,6 +41,8 @@
   ul { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
   a { color: var(--gpu); }
   .fecha { color: var(--muted); font-size: .88rem; }
+  .cambiar { margin-top: 6px; border: 1px solid var(--line-2); background: var(--panel); color: var(--text); border-radius: 10px; padding: 9px 14px; font: 700 .9rem 'Manrope', sans-serif; cursor: pointer; }
+  .cambiar:hover { border-color: var(--gpu); }
   footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--muted); font-size: .84rem; }
   @media (max-width: 640px) { .wrap { padding: 0 16px; } main { padding-top: 32px; } }
 </style>
@@ -57,17 +59,22 @@
   <h1>Privacidad y cookies</h1>
   <p class="fecha">Última actualización: 2 de octubre de 2026</p>
 
-  <div class="resumen"><strong>En corto:</strong> no te pedimos ningún dato, no usamos cookies y no te seguimos. Los botones "Ver en Amazon" son enlaces de afiliado: si entras en Amazon, se aplican sus normas y sus cookies.</div>
+  <div class="resumen"><strong>En corto:</strong> no te pedimos ningún dato. Las cookies de análisis, que nos sirven para mejorar la web, son opcionales: solo se activan si las aceptas y puedes cambiar de opinión cuando quieras. Los botones "Ver en Amazon" son enlaces de afiliado: si entras en Amazon, se aplican sus normas y sus cookies.</div>
 
   <section>
     <h2>Qué datos recogemos</h2>
-    <p>Ninguno. FPS Battle no tiene formularios, cuentas de usuario ni estadísticas de visitas. Todas las herramientas (comparar piezas, compatibilidad, FPS y "Tu PC ideal") hacen sus cálculos dentro de tu propio navegador: lo que eliges no se envía a ningún sitio.</p>
+    <p>FPS Battle no tiene formularios ni cuentas de usuario, y no te pide ningún dato personal. Todas las herramientas (comparar piezas, compatibilidad, FPS y "Tu PC ideal") hacen sus cálculos dentro de tu propio navegador.</p>
+    <p>Solo si aceptas las cookies de análisis se recogerán datos de uso de la web (por ejemplo, qué herramientas se usan más), sin identificarte, para saber qué mejorar.</p>
   </section>
 
   <section>
     <h2>Cookies</h2>
-    <p>Esta web no usa cookies propias ni de terceros: ni de publicidad, ni de análisis, ni de redes sociales.</p>
-    <p>Lo único que guardamos es, en el almacenamiento local de tu navegador, que has cerrado el aviso sobre cookies, para no volver a enseñártelo. Ese dato no sale de tu navegador y puedes borrarlo cuando quieras desde los ajustes del navegador ("borrar datos de sitios").</p>
+    <ul>
+      <li><strong>Técnicas (necesarias):</strong> guardamos en el almacenamiento local de tu navegador si has aceptado o rechazado las cookies, para no preguntarte cada vez. Ese dato no sale de tu navegador.</li>
+      <li><strong>De análisis (opcionales):</strong> nos ayudan a saber cómo se usa la web y qué mejorar. Solo se activan si pulsas "Aceptar" en el aviso. Ahora mismo todavía no hay ninguna herramienta de análisis activa; cuando la añadamos, indicaremos aquí cuál es y qué cookies usa.</li>
+    </ul>
+    <p>No usamos cookies de publicidad ni de redes sociales.</p>
+    <p><button type="button" class="cambiar" id="cambiarCookies">Cambiar mi elección de cookies</button> <span id="cambiadas" class="fecha" hidden>Hecho: la próxima vez que entres en la web te volveremos a preguntar.</span></p>
   </section>
 
   <section>
@@ -94,7 +101,7 @@
 
   <section>
     <h2>Si algo cambia</h2>
-    <p>Si algún día añadimos publicidad o estadísticas que usen cookies, lo explicaremos en esta página y te pediremos permiso antes de activarlas.</p>
+    <p>Si añadimos una herramienta de estadísticas o publicidad, lo explicaremos en esta página y te volveremos a pedir permiso antes de activarla.</p>
   </section>
 </main>
 
@@ -103,5 +110,12 @@
     <p>© 2026 FPS Battle · <a href="./">Volver a la web</a></p>
   </div>
 </footer>
+<script>
+  // Borra la elección guardada para que la web vuelva a preguntar por las cookies.
+  document.getElementById('cambiarCookies').addEventListener('click', () => {
+    try { localStorage.removeItem('fpsbattle-cookies'); } catch (e) { /* almacenamiento bloqueado */ }
+    document.getElementById('cambiadas').hidden = false;
+  });
+</script>
 </body>
 </html>

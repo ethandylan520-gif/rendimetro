@@ -605,7 +605,7 @@
   .pie-links a { color: var(--text-2); text-decoration: none; font-weight: 600; }
   .pie-links a:hover { color: var(--gpu); }
 
-  /* Aviso de cookies (solo informativo: la web no usa cookies) */
+  /* Aviso de cookies: las de análisis solo se activan si el visitante acepta */
   .aviso-cookies {
     position: fixed; left: 50%; bottom: 16px; z-index: 60; transform: translateX(-50%);
     width: min(620px, calc(100% - 24px)); display: flex; align-items: center; gap: 14px;
@@ -617,10 +617,13 @@
   .aviso-cookies p { margin: 0; flex: 1; }
   .aviso-cookies strong { color: var(--text); }
   .aviso-cookies a { color: var(--gpu); }
+  .aviso-botones { flex: none; display: flex; gap: 8px; }
   .aviso-cookies button {
-    flex: none; border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer;
+    min-width: 104px; border: 1px solid transparent; border-radius: 10px; padding: 10px 16px; cursor: pointer;
     background: linear-gradient(90deg, var(--gpu), var(--cpu)); color: var(--ink); font: 800 .86rem 'Manrope', sans-serif;
   }
+  .aviso-cookies button.secundario { background: var(--panel-2); color: var(--text); border-color: var(--line-2); }
+  .aviso-cookies button.secundario:hover { border-color: var(--text-2); }
   .aviso-cookies button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
   @media (max-width: 860px) {
@@ -641,6 +644,7 @@
   }
   @media (max-width: 640px) {
     .aviso-cookies { flex-direction: column; align-items: stretch; gap: 10px; bottom: 10px; }
+    .aviso-botones > * { flex: 1; }
     .pie-top { flex-direction: column; gap: 18px; }
     .wrap { padding: 0 16px; }
     nav.links { display: none; }
@@ -941,21 +945,25 @@
         <a href="#guias">Guías</a>
         <a href="#preguntas">Preguntas frecuentes</a>
         <a href="privacidad.html">Privacidad y cookies</a>
+        <a href="#" data-config-cookies>Configurar cookies</a>
       </nav>
     </div>
     <p>Como Afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables. As an Amazon Associate I earn from qualifying purchases.</p>
-    <p>Puntuaciones y FPS orientativos; precios revisados cada semana. Las marcas mencionadas pertenecen a sus respectivos propietarios. Esta web no usa cookies propias ni de seguimiento.</p>
+    <p>Puntuaciones y FPS orientativos; precios revisados cada semana. Las marcas mencionadas pertenecen a sus respectivos propietarios.</p>
     <p>© 2026 FPS Battle</p>
   </div>
 </footer>
 
-<div class="aviso-cookies" id="avisoCookies" role="region" aria-label="Aviso sobre cookies" hidden>
-  <p><strong>🍪 Sin cookies de seguimiento.</strong> FPS Battle no usa cookies propias ni de terceros. Los botones "Ver en Amazon" son enlaces de afiliado: si entras en Amazon, allí se aplican sus cookies. <a href="privacidad.html">Más información</a></p>
-  <button type="button" id="avisoOk">Entendido</button>
+<div class="aviso-cookies" id="avisoCookies" role="region" aria-label="Cookies" hidden>
+  <p><strong>🍪 Cookies.</strong> Nos gustaría usar cookies de análisis para saber cómo se usa FPS Battle y mejorarla. Solo se activan si aceptas. Los botones "Ver en Amazon" son enlaces de afiliado: en Amazon se aplican sus cookies. <a href="privacidad.html">Más información</a></p>
+  <div class="aviso-botones">
+    <button type="button" id="cookiesNo" class="secundario">Rechazar</button>
+    <button type="button" id="cookiesSi">Aceptar</button>
+  </div>
 </div>
 
-<script src="js/config.js?v=202610021726"></script>
-<script src="js/data.js?v=202610021726"></script>
-<script src="js/app.js?v=202610021726"></script>
+<script src="js/config.js?v=202610021812"></script>
+<script src="js/data.js?v=202610021812"></script>
+<script src="js/app.js?v=202610021812"></script>
 </body>
 </html>

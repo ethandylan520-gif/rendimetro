@@ -1292,19 +1292,39 @@
     if (trio.dataset.tono === 'bad') reiniciarClase(trio, 'roto');
   });
 
-  // ---------- Aviso de cookies ----------
-  // Solo informa (la web no usa cookies). Se recuerda que lo cerraste en tu navegador para no volver a mostrarlo.
-  (() => {
-    const aviso = $('avisoCookies');
-    let cerrado = false;
-    try { cerrado = localStorage.getItem('fpsbattle-aviso') === '1'; } catch { /* almacenamiento bloqueado */ }
-    if (cerrado) return;
-    aviso.hidden = false;
-    $('avisoOk').addEventListener('click', () => {
-      aviso.hidden = true;
-      try { localStorage.setItem('fpsbattle-aviso', '1'); } catch { /* almacenamiento bloqueado */ }
-    });
-  })();
+  // ---------- Cookies ----------
+  // Las cookies de análisis solo se activan si el visitante acepta. Su elección se guarda en su navegador.
+  // Si algún día cambian las cookies (otro proveedor de estadísticas, publicidad…), sube VERSION_COOKIES para volver a preguntar.
+  const CLAVE_COOKIES = 'fpsbattle-cookies', VERSION_COOKIES = 1;
+
+  function leerConsentimiento() {
+    try {
+      const c = JSON.parse(localStorage.getItem(CLAVE_COOKIES));
+      return c && c.v === VERSION_COOKIES ? c : null;
+    } catch { return null; }
+  }
+
+  // Aquí se cargará la herramienta de estadísticas cuando se añada. Solo se llama si el visitante ha aceptado.
+  function cargarAnalitica() {}
+
+  function guardarConsentimiento(acepta) {
+    try {
+      localStorage.setItem(CLAVE_COOKIES, JSON.stringify({ v: VERSION_COOKIES, analitica: acepta, fecha: new Date().toISOString().slice(0, 10) }));
+    } catch { /* almacenamiento bloqueado: se volverá a preguntar la próxima vez */ }
+    $('avisoCookies').hidden = true;
+    if (acepta) cargarAnalitica();
+  }
+
+  const consentimiento = leerConsentimiento();
+  if (!consentimiento) $('avisoCookies').hidden = false;
+  else if (consentimiento.analitica) cargarAnalitica();
+  $('cookiesSi').addEventListener('click', () => guardarConsentimiento(true));
+  $('cookiesNo').addEventListener('click', () => guardarConsentimiento(false));
+  document.querySelectorAll('[data-config-cookies]').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    $('avisoCookies').hidden = false;
+    $('cookiesNo').focus();
+  }));
 
   // ---------- Pestañas ----------
   const tabs = [...document.querySelectorAll('.tab')];
