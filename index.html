@@ -607,8 +607,8 @@
 
   /* Aviso de cookies: las de análisis solo se activan si el visitante acepta */
   .aviso-cookies {
-    position: fixed; left: 50%; bottom: 16px; z-index: 60; transform: translateX(-50%);
-    width: min(620px, calc(100% - 24px)); display: flex; align-items: center; gap: 14px;
+    position: fixed; left: 0; right: 0; margin: 0 auto; bottom: 16px; z-index: 60;
+    width: max-content; max-width: calc(100% - 24px); display: flex; align-items: center; gap: 14px;
     padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line-2);
     background: rgba(18, 15, 36, .96); backdrop-filter: blur(8px); box-shadow: 0 18px 50px rgba(0, 0, 0, .55);
     font-size: .86rem; color: var(--text-2); animation: entra .45s cubic-bezier(.2, .8, .2, 1) backwards;
@@ -617,6 +617,8 @@
   .aviso-cookies p { margin: 0; flex: 1; }
   .aviso-cookies strong { color: var(--text); }
   .aviso-cookies a { color: var(--gpu); }
+  .aviso-cookies .cookies-titulo { color: var(--text); font-weight: 800; font-size: .95rem; text-decoration: none; white-space: nowrap; }
+  .aviso-cookies .cookies-titulo:hover { text-decoration: underline; }
   .aviso-botones { flex: none; display: flex; gap: 8px; }
   .aviso-cookies button {
     min-width: 104px; border: 1px solid transparent; border-radius: 10px; padding: 10px 16px; cursor: pointer;
@@ -643,8 +645,8 @@
     .upgrades { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
-    .aviso-cookies { flex-direction: column; align-items: stretch; gap: 10px; bottom: 10px; }
-    .aviso-botones > * { flex: 1; }
+    .aviso-cookies { gap: 10px; bottom: 10px; padding: 12px; }
+    .aviso-cookies button { min-width: 0; padding: 9px 12px; }
     .pie-top { flex-direction: column; gap: 18px; }
     .wrap { padding: 0 16px; }
     nav.links { display: none; }
@@ -955,7 +957,7 @@
 </footer>
 
 <div class="aviso-cookies" id="avisoCookies" role="region" aria-label="Cookies" hidden>
-  <p><strong>🍪 Cookies.</strong> Nos gustaría usar cookies de análisis para saber cómo se usa FPS Battle y mejorarla. Solo se activan si aceptas. Los botones "Ver en Amazon" son enlaces de afiliado: en Amazon se aplican sus cookies. <a href="privacidad.html">Más información</a></p>
+  <p><a class="cookies-titulo" href="privacidad.html" title="Más información sobre las cookies">🍪 Cookies</a></p>
   <div class="aviso-botones">
     <button type="button" id="cookiesNo" class="secundario">Rechazar</button>
     <button type="button" id="cookiesSi">Aceptar</button>
